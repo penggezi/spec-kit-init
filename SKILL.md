@@ -149,7 +149,7 @@ echo "" | PYTHONIOENCODING=utf-8 specify init --here --integration {AGENT_SPECIF
 > 为什么不用 `yes "" |`？`echo "" |` 发送一个空行即可，因为交互式选择的默认选项无需修改。`yes "" |` 虽然更可靠（持续发送空行覆盖所有交互步骤），但 Git Bash 可能不支持 `yes` 命令。
 >
 > Windows 上保留 `PYTHONIOENCODING=utf-8` 以防 unicode 编码问题。
-> `--no-git` 参数已在 v0.9.x 弃用，v0.10.0 后默认不再启用 git 扩展，故不再传入。
+> `--no-git` 参数已在 v0.9.x 弃用，v0.10.0 后默认不再启用 git 扩展。但为兼容不同版本，执行完成后仍清理 `speckit-git-*` 目录以确保干净。
 
 如 `--ignore-agent-tools` 不被当前版本识别，去掉该参数再试：
 
@@ -163,6 +163,12 @@ echo "" | PYTHONIOENCODING=utf-8 specify init --here --integration {AGENT_SPECIF
 这会创建完整的 SDD 工作流结构：
 - `.specify/` — 配置和模板
 - `{AGENT_SKILL_DIR}/speckit-*/` — 所有 `/speckit-*` 斜杠命令
+
+**speckit-git-* 清理**：`specify init` 可能仍会生成 `speckit-git-*` 相关 skill（git commit/tag/rebase 等工作流扩展），这些命令不在本 Skill 核心流程范围内，执行清理：
+
+```bash
+rm -rf {AGENT_SKILL_DIR}/speckit-git-*
+```
 
 #### 1.5 可选：初始化 Constitution
 
