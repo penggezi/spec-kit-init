@@ -64,16 +64,22 @@
 ## 项目结构
 
 ```
-├── SKILL.md                         # Skill 定义（主入口）
+├── SKILL.md                              # Skill 定义（主入口）
+├── CLAUDE.md                             # 本项目的 AI 指令文件
+├── README.md                             # 项目说明文档
+├── LICENSE                               # MIT 许可证
 ├── scripts/
-│   └── ensure-specify.sh           # specify-cli 安装脚本
+│   └── ensure-specify.sh                 # specify-cli 安装脚本
 ├── references/
-│   └── agent-instructions-template.md  # 指令文件注入模板
-├── templates/
-│   └── retro-skill.md              # /retro 复盘 Skill 模板
-└── .claude/
-    └── settings.local.json         # 本地设置
+│   └── agent-instructions-template.md    # 指令文件注入模板
+└── templates/
+    ├── retro-skill.md                    # /retro 复盘 Skill 模板
+    └── retro-references/                 # 复盘审查角色 prompt 模板
+        ├── mechanism-auditor.md
+        └── routing-auditor.md
 ```
+
+> 以上为提交到 GitHub 的真实结构。`.claude/` 等本地目录通过 `.gitignore` 排除，不上传 GitHub。
 
 ## 许可证
 
