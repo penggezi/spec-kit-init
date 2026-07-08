@@ -29,7 +29,9 @@
 | `SKILL.md` | **主入口**。定义 4 个初始化阶段（环境检测 → SDD 安装 → 经验沉淀 → 汇报），是全部逻辑的载体 |
 | `scripts/ensure-specify.sh` | bash 脚本，检测并安装 `specify-cli`（带网络重试和超时保护） |
 | `references/agent-instructions-template.md` | SDD 段落模板 + 经验库优先段模板，注入到目标项目的 AI 指令文件中 |
-| `templates/retro-skill.md` | `/retro` 复盘 Skill 的完整定义模板，含 5 层质量门禁 + 对抗审查 + 去重机制 |
+| `templates/retro-skill.md` | `/retro` 复盘 Skill 的完整定义模板，含 3 种模式 + 5 层质量门禁 + 双角色对抗审查 + 去重机制 |
+| `templates/retro-references/mechanism-auditor.md` | 机制审计员审查 prompt 模板（判断经验是否揭示根因机制） |
+| `templates/retro-references/routing-auditor.md` | 路由审核员审查 prompt 模板（判断经验归入 constitution.md 还是 lessons.md） |
 
 ### SKILL.md 的 4 个阶段
 
@@ -44,10 +46,12 @@
 阶段 2：合并产出指令文件 → 将 SDD 段注入目标项目指令文件
 
 阶段 3：经验沉淀机制初始化
-  ├── 3.1 创建 lessons.md 骨架
+  ├── 3.1 创建 lessons.md + lessons.idx 骨架（物理隔离的轻量去重索引）
   ├── 3.2 安装 /retro skill
+  ├── 3.2.1 安装 /retro 子代理审查模板（mechanism-auditor + routing-auditor）
   ├── 3.3 改造 /speckit-plan（注入 lessons.md 必读）
-  └── 3.4 改造 /speckit-implement（注入 lessons.md + 复盘询问）
+  ├── 3.4 改造 /speckit-implement（注入 lessons.md + 复盘询问）
+  └── 3.5 验证闭环完整性（逐项确认所有文件存在、注入到位）
 
 阶段 4：汇报 → 展示初始化结果和可用命令
 ```
@@ -57,6 +61,9 @@
 - **非交互式终端兼容**：`specify init` 在 CI/agent 环境中会永久阻塞，需通过 `echo "" |` 管道发送空行让交互步骤使用默认选项
 - **渐进式加载**：SKILL.md 本身包含全部流程描述，`references/` 和 `templates/` 下的文件按需读取，避免提前占用上下文
 - **回滚与恢复**：每个阶段都明确了失败时的清理方式（见 SKILL.md 末尾"约束"章节）
+- **物理隔离的轻量去重索引**：`lessons.idx` 与 `lessons.md` 分离，去重时先读索引（O(n) 恒定成本），命中后才读正文精确比对，避免扫描成本随经验积累膨胀
+- **双角色对抗审查**：每条经验经 mechanism-auditor（审查是否揭示根因机制）和 routing-auditor（审查归入 constitution 还是 lessons）独立审查，两个角色都通过才放行
+- **参考源勘误驱动**：经验挖掘不再依赖"回顾会话记录"，而是以"本次工作参考了什么"为线索，逐参考源回答"准确吗/完整吗/适用吗/费解吗"四个问题
 - **支持多平台**：Claude Code、Codex、GitHub Copilot、Cursor 各有不同的指令文件路径和配置参数
 
 ## Git 推送规范
