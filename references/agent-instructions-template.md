@@ -19,13 +19,14 @@
 ## 整体流程图
 
 ```
-constitution → specify → [clarify] → plan → [checklist] → tasks → [analyze] → implement → retro
-   一次性          ↑──────────── 每个新功能循环 ────────────↓        每次完成后
+constitution → specify → [clarify] → plan → [checklist] → tasks → [analyze] → implement → [quality] → retro
+   一次性          ↑────────────────── 每个新功能循环 ──────────────────↓        每次完成后
 ```
 
 - **方括号** 内的步骤为可选增强，按需使用
 - **constitution** 通常只在项目启动或原则变更时执行一次
 - **specify → implement** 是每个新功能/迭代的标准循环
+- **quality** 在每次实现完成后自动执行代码质量检查
 - **retro** 在每次实现完成后沉淀经验，避免重复踩坑
 
 ## 关键产出路径
@@ -75,13 +76,21 @@ SDD 命令安装位置：`{AGENT_SKILL_DIR}/speckit-*/`（{AGENT_NAME} 斜杠命
 
 ### 5. `/speckit-implement` — 执行实现
 
-**作用**：按 tasks.md 顺序执行编码工作，逐项完成并标记进度。完成后会主动询问是否进行 `/retro` 复盘。
+**作用**：按 tasks.md 顺序执行编码工作，逐项完成并标记进度。完成后自动执行代码质量门禁（检测技术栈 → 运行对应静态分析 → 评估结果），通过后主动询问是否进行 `/retro` 复盘。
 
 **何时使用**：tasks.md 准备就绪后。
 
 **产出**：实际代码 + 测试。
 
-### 6. `/retro` — 经验复盘
+### 6. `/speckit-quality` — 代码质量检查
+
+**作用**：自动检测项目技术栈，运行对应的静态分析工具（Java→Checkstyle/P3C、JS/TS→ESLint、Python→ruff 等），评估结果并修复阻塞性问题。
+
+**何时使用**：任何时候需要检查代码质量时，或在 `/speckit-implement` 完成后质量门禁未通过时。
+
+**产出**：质量检查报告。
+
+### 7. `/retro` — 经验复盘
 
 **作用**：将本次会话中的踩坑、决策、反馈分流到二类长期资产（详见下方「经验沉淀」段）。
 
@@ -101,7 +110,8 @@ SDD 命令安装位置：`{AGENT_SKILL_DIR}/speckit-*/`（{AGENT_NAME} 斜杠命
 
 # 4. 拆解任务并执行
 /speckit-tasks
-/speckit-implement
+/speckit-implement     # 实现完成后自动执行质量门禁
+/speckit-quality       # 也可随时手动检查代码质量
 ```
 
 ## 可选增强命令

@@ -19,11 +19,12 @@ description: |
 
 ## 核心职责
 
-本 skill 是内置 `/init` 的增强替代版，一次完成三件事：
+本 skill 是内置 `/init` 的增强替代版，一次完成四件事：
 
 1. **代码库分析**（等同于 `/init`）→ 项目指令文件上半部分
 2. **SDD 工作流搭建** → 项目指令文件下半部分（`<!-- SDD:START/END -->` 标记包裹）
 3. **经验沉淀机制初始化** → `/retro` skill + `lessons.md` + 经验自动参考链路
+4. **代码质量门禁初始化** → `/speckit-quality` skill + implement 质量检查注入
 
 **重要**：当本 skill 触发时，不要再调用内置 `/init`，本 skill 已包含其全部功能。
 
@@ -35,6 +36,7 @@ description: |
 |------|------|
 | 获取指令文件注入模板 | `references/agent-instructions-template.md` |
 | 获取 /retro skill 模板 | `templates/retro-skill.md` |
+| 获取 /speckit-quality skill 模板 | `templates/quality-gate-skill.md` |
 
 按需读取，仅在执行对应阶段时才加载参考文件，避免提前占用上下文。
 
@@ -355,7 +357,80 @@ cp -r templates/retro-references/ {AGENT_SKILL_DIR}/retro/references/
 - [ ] `/speckit-implement` 读到 lessons.md + 完成后询问复盘
 - [ ] 复盘写入后，下次会话 `{AGENT_FILE}` 强制读 lessons.md → 经验被复用
 
-### 阶段 4：汇报
+### 阶段 4：代码质量门禁初始化
+
+> 此阶段仅在选择了 Claude Code 或 Codex 时执行（`{AGENT_SPECIFY}` 有值）。Copilot/Cursor 跳过。
+
+> **设计意图**：在 SDD 工作流中增加代码质量检查环节，确保"写完代码"到"复盘沉淀"之间有一个质量门禁。统一的全量扫描而非散入任务粒度，避免上下文污染和 scope 不完整的问题。
+
+#### 4.1 安装 /speckit-quality skill
+
+读取 `templates/quality-gate-skill.md`，将其内容写入 `{AGENT_SKILL_DIR}/speckit-quality/SKILL.md`。
+
+如已有此文件，跳过创建。
+
+确认安装后的文件结构：
+
+```
+{AGENT_SKILL_DIR}/speckit-quality/SKILL.md
+```
+
+#### 4.2 改造 /speckit-implement（注入代码质量门禁）
+
+> 仅在 `{AGENT_SKILL_DIR}/speckit-implement/SKILL.md` 存在时执行（Copilot/Cursor 无 speckit 命令，自动跳过）。
+
+读取 `{AGENT_SKILL_DIR}/speckit-implement/SKILL.md`。
+
+用语义正则定位到 "Completion validation" 或最后验证步骤之后、"Retrospective Prompt"/复盘提示步骤之前的区域，插入质量门禁步骤：
+
+```
+N. **代码质量门禁（Code Quality Gate）**：
+
+    在全部实现任务标记完成之后、复盘提示之前，执行统一的代码质量检查。
+
+    a. **自动检测项目技术栈**：根据项目根目录的配置文件确定技术栈（pom.xml → Java、package.json → JS/TS 等）。多模块项目检测多个技术栈。
+
+    b. **运行对应的静态分析工具**，覆盖全部修改的文件：
+       | 技术栈 | 工具命令 |
+       |--------|---------|
+       | Java | `mvn checkstyle:check spotbugs:check` 或 `gradle check` |
+       | JavaScript/TypeScript | `npx eslint src/ --max-warnings 0` |
+       | Python | `ruff check .` 或 `pylint` |
+       | Go | `golangci-lint run` |
+       | Rust | `cargo clippy -- -D warnings` |
+       | 未知/无匹配 | 跳过质量门禁，告知用户"未检测到已知技术栈，跳过质量检查" |
+
+    c. **评估结果**：
+       - ✅ 通过 → 继续到复盘提示
+       - ❌ 阻塞（有错误级别）→ 展示摘要 → 询问"是否自动修复阻塞问题" → 同意则逐问题修复 → 通过后继续；拒绝则标记"质量门禁未通过"后继续
+       - ⚠️ 警告（有非阻塞问题）→ 展示摘要 → 不修复 → 将模式特征记录为复盘候选素材
+
+    d. **跳过条件**：用户可明确说"跳过质量检查"；连续3次阻塞且用户均选择不修复时不再重复提示。
+
+    e. **与复盘联动**：将质量检查中发现的警告模式传递给复盘步骤（建议格式："本实现中发现 X 类问题 Y 处，建议复盘时判断是否需要沉淀为质量规范经验"）。
+```
+
+并将原后续步骤重新编号。
+
+**正则匹配失败时的兜底**：在 `{AGENT_SKILL_DIR}/speckit-implement/SKILL.md` 文件末尾追加：
+
+```
+<!-- ⚠ 自动追加，请人工确认位置是否正确 -->
+## ⚠ 质量门禁注入（由 spec-kit-init 追加）
+
+在全部实现任务标记完成之后、复盘提示之前，新增「代码质量门禁」步骤：自动检测技术栈 → 运行对应静态分析 → 评估结果（通过/阻塞/警告）→ 阻塞修复 → 通过后继续。
+```
+
+追加后明确告知用户："/speckit-implement 质量门禁注入未完全成功（模板结构已变化），已在文件末尾追加插桩，请人工确认并调整位置。"
+
+#### 4.3 验证质量门禁完整性
+
+确认以下链路连通：
+- [ ] `{AGENT_SKILL_DIR}/speckit-quality/SKILL.md` 存在
+- [ ] `/speckit-implement` 中存在代码质量门禁步骤（完成验证之后、复盘提示之前）
+- [ ] 质量门禁步骤中包含技术栈检测逻辑、工具映射表、结果分级和跳过条件
+
+### 阶段 5：汇报
 
 按初始化操作顺序，逐一解释每个操作的作用和可选性，让用户理解 SDD 工作流的全貌：
 
@@ -381,13 +456,17 @@ cp -r templates/retro-references/ {AGENT_SKILL_DIR}/retro/references/
    → 安装 /retro 命令 + 创建 lessons.md 经验库
    → 改造 /speckit-plan 和 /speckit-implement → 每次写代码前自动参考经验，写完后自动询问复盘
 
+   ⑥ 代码质量门禁初始化 ── 安装质量检查命令 + 注入 implement 质量门禁
+      → 安装 /speckit-quality 命令，随时手动运行质量检查
+      → 改造 /speckit-implement → 实现完成后自动执行质量门禁，通过后方提示复盘
+
 ━━━━━━━━━━━━━━━━━━━━━━━━ 可选操作 ━━━━━━━━━━━━━━━━━━━━━━━━━
 
-⑥ 代码库分析（可选）── 分析已有项目结构，写入指令文件
+⑦ 代码库分析（可选）── 分析已有项目结构，写入指令文件
    → 空目录或新项目跳过此步
    → 已有项目执行后可让 AI 在后续会话中了解项目架构
 
-⑦ 初始化 Constitution（可选）── 定义项目的技术栈约束、架构边界、不可违反的规则
+⑧ 初始化 Constitution（可选）── 定义项目的技术栈约束、架构边界、不可违反的规则
    → 通过 /speckit-constitution 随时建立或修改
 
 ━━━━━━━━━━━━━━━━━━━━━━━━ 可用的命令 ━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -396,7 +475,8 @@ cp -r templates/retro-references/ {AGENT_SKILL_DIR}/retro/references/
   /speckit-specify     → 编写功能规格（WHAT）
   /speckit-plan        → 制定技术方案（HOW）
   /speckit-tasks       → 拆解执行任务
-  /speckit-implement   → 按任务实现编码（完成后自动提示复盘）
+  /speckit-implement   → 按任务实现编码（完成后执行质量门禁，通过后方提示复盘）
+  /speckit-quality     → 代码质量检查（自动检测技术栈并运行静态分析）
   /retro               → 经验复盘沉淀
 
 增强命令（按需使用）：
@@ -411,8 +491,9 @@ cp -r templates/retro-references/ {AGENT_SKILL_DIR}/retro/references/
   .specify/memory/          ← Constitution + 经验库
   {AGENT_SKILL_DIR}/speckit-*/   ← SDD 命令
   {AGENT_SKILL_DIR}/retro/       ← 复盘命令
+  {AGENT_SKILL_DIR}/speckit-quality/ ← 质量门禁命令
 
-经验闭环：实现完成 → 复盘提示 → /retro 沉淀 → lessons.md 入库
+经验闭环：实现完成 → 质量门禁 → 复盘提示 → /retro 沉淀 → lessons.md 入库
            → 下次会话 {AGENT_FILE} 强制读 lessons.md → 经验被自动参考
 ```
 
@@ -425,9 +506,11 @@ cp -r templates/retro-references/ {AGENT_SKILL_DIR}/retro/references/
 - 已有项目先展示变更摘要再执行：即将创建的文件清单（.specify/ 目录结构、{AGENT_SKILL_DIR}/speckit-*、{AGENT_FILE} 注入段）、即将修改的现有文件（{AGENT_FILE}、{AGENT_SKILL_DIR}/speckit-*）。用户确认后再执行
 - 不再调用内置 `/init`
 - 经验沉淀机制（/retro + lessons.md + speckit 改造）是初始化的一部分，不要跳过
+- 代码质量门禁（/speckit-quality + implement 质量检查）是初始化的一部分，不要跳过（仅 Claude Code / Codex 平台）
 - **错误处理原则**：未特别说明的步骤，失败即终止并报告原因，不得静默继续。关键步骤的失败处理已在各阶段中单独标注
 - **回滚与恢复**：如果初始化在中间步骤失败，项目可能处于半初始化状态。按以下方式清理：
   - `specify init` 已完成但后续步骤失败 → `.specify/` 目录已创建，保留不变；`{AGENT_FILE}` 中若已注入 `<!-- SDD:...-->` 标记，手动删除标记段即可恢复
   - `specify init` 本身失败 → 没有任何文件变更，无需回滚
   - 经验沉淀步骤（阶段 3）已修改 `/speckit-plan` 或 `/speckit-implement` 但后续失败 → 在对应文件的 `<!-- ⚠ 自动追加...-->` 标记处删除注入内容即可恢复
-  - **完整清理**：`rm -rf .specify/ {AGENT_SKILL_DIR}/speckit-* {AGENT_SKILL_DIR}/retro` + 从 `{AGENT_FILE}` 中移除 `<!-- SDD:START -->` 至 `<!-- SDD:END -->` 段
+  - 质量门禁步骤（阶段 4）已修改 `/speckit-implement` 但后续失败 → 在对应文件的 `<!-- ⚠ 自动追加...-->` 标记处删除质量门禁注入内容即可恢复
+  - **完整清理**：`rm -rf .specify/ {AGENT_SKILL_DIR}/speckit-* {AGENT_SKILL_DIR}/retro {AGENT_SKILL_DIR}/speckit-quality` + 从 `{AGENT_FILE}` 中移除 `<!-- SDD:START -->` 至 `<!-- SDD:END -->` 段

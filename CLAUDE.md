@@ -12,11 +12,12 @@
 
 ## 项目概述
 
-`spec-kit-init` 是 Claude Code 的 Skill，用于替代内置 `/init` 命令。它一次完成三件事：
+`spec-kit-init` 是 Claude Code 的 Skill，用于替代内置 `/init` 命令。它一次完成四件事：
 
 1. **代码库分析** → 生成项目指令文件（CLAUDE.md / AGENTS.md 等）
 2. **SDD 工作流搭建** → 通过 `specify init` 安装 Spec-Kit 框架
 3. **经验沉淀机制初始化** → `/retro` skill + `lessons.md` + 经验自动参考链路
+4. **代码质量门禁初始化** → `/speckit-quality` skill + implement 质量检查注入
 
 ## 架构要点
 
@@ -26,14 +27,15 @@
 
 | 文件 | 用途 |
 |------|------|
-| `SKILL.md` | **主入口**。定义 4 个初始化阶段（环境检测 → SDD 安装 → 经验沉淀 → 汇报），是全部逻辑的载体 |
+| `SKILL.md` | **主入口**。定义 5 个初始化阶段（环境检测 → SDD 安装 → 经验沉淀 → **质量门禁** → 汇报），是全部逻辑的载体 |
 | `scripts/ensure-specify.sh` | bash 脚本，检测并安装 `specify-cli`（带网络重试和超时保护） |
 | `references/agent-instructions-template.md` | SDD 段落模板 + 经验库优先段模板，注入到目标项目的 AI 指令文件中 |
 | `templates/retro-skill.md` | `/retro` 复盘 Skill 的完整定义模板，含 3 种模式 + 5 层质量门禁 + 双角色对抗审查 + 去重机制 |
 | `templates/retro-references/mechanism-auditor.md` | 机制审计员审查 prompt 模板（判断经验是否揭示根因机制） |
 | `templates/retro-references/routing-auditor.md` | 路由审核员审查 prompt 模板（判断经验归入 constitution.md 还是 lessons.md） |
+| `templates/quality-gate-skill.md` | `/speckit-quality` 质量门禁命令的完整定义模板，含技术栈自动检测和工具映射 |
 
-### SKILL.md 的 4 个阶段
+### SKILL.md 的 5 个阶段
 
 ```
 阶段 1：分析 + 初始化
@@ -53,7 +55,13 @@
   ├── 3.4 改造 /speckit-implement（注入 lessons.md + 复盘询问）
   └── 3.5 验证闭环完整性（逐项确认所有文件存在、注入到位）
 
-阶段 4：汇报 → 展示初始化结果和可用命令
+阶段 4：代码质量门禁初始化（新增）
+  ├── 4.1 安装 /speckit-quality skill
+  ├── 4.2 改造 /speckit-implement（注入代码质量门禁步骤）
+  └── 4.3 验证质量门禁完整性
+
+阶段 5：汇报（原阶段 4）
+  └── 展示初始化结果和可用命令（含 /speckit-quality）
 ```
 
 ### 关键设计决策
