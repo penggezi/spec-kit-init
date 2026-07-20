@@ -2,7 +2,7 @@
 name: "speckit-quality"
 description: "代码质量门禁。自动检测项目技术栈，运行对应的静态分析工具，评估结果并修复阻塞性问题。"
 argument-hint: "留空=全量检查；指定文件路径=仅检查指定文件"
-user-invocable: false
+user-invocable: true
 disable-model-invocation: false
 ---
 
@@ -33,8 +33,14 @@ ARGUMENTS
 | package.json + .ts/.tsx | TypeScript | npx eslint src/ --max-warnings 0 |
 | package.json（无 TypeScript） | JavaScript | npx eslint src/ --max-warnings 0 |
 | pyproject.toml 或 requirements.txt | Python | ruff check . |
-| go.mod | Go | golangci-lint run |
+| go.mod | Go | golangci-lint run ./... |
 | Cargo.toml | Rust | cargo clippy -- -D warnings |
+| build.gradle.kts 或 .kt 文件 | Kotlin | ./gradlew ktlintCheck 或 detekt |
+| composer.json | PHP | vendor/bin/phpstan analyse 或 phpcs |
+| Gemfile 或 .rb 文件 | Ruby | bundle exec rubocop |
+| Package.swift 或 .swift 文件 | Swift | swiftlint |
+| pubspec.yaml | Dart/Flutter | dart analyze |
+| CMakeLists.txt 或 *.c/*.cpp | C/C++ | clang-tidy |
 | .csproj 或 .sln | .NET | dotnet format --verify-no-changes |
 | 多个特征同时存在 | 多模块 | 逐技术栈运行 |
 | 无匹配 | 未知 | 跳过检查 |
@@ -51,13 +57,24 @@ ARGUMENTS
 - Python: `ruff check .`
 - Go: `golangci-lint run ./...`
 - Rust: `cargo clippy -- -D warnings`
+- Kotlin: `./gradlew ktlintCheck`
+- PHP: `vendor/bin/phpstan analyse src/`
+- Ruby: `bundle exec rubocop`
+- Swift: `swiftlint`
+- Dart/Flutter: `dart analyze`
 
 **限定文件命令示例**：
 - ESLint: `npx eslint --no-ignore --max-warnings 0 file1.ts file2.ts`
 - Ruff: `ruff check file1.py file2.py`
 - Checkstyle: `mvn checkstyle:check -Dcheckstyle.includes=**/File.java`
 
-> 工具命令不存在时，展示失败原因后跳过检查，不阻塞流程。
+> 工具命令不存在时，展示失败原因并给出安装引导后跳过检查，不阻塞流程。
+>
+> 安装引导示例：
+> - ESLint 未安装 → `npm install -g eslint` 或 `pnpm add -D eslint`
+> - Ruff 未安装 → `pip install ruff` 或 `uv tool install ruff`
+> - ktlint 未安装 → `./gradlew ktlintCheck`（需在 build.gradle.kts 中配置 ktlint 插件）
+> - phpstan 未安装 → `composer require --dev phpstan/phpstan`
 
 ### 4. 评估结果
 

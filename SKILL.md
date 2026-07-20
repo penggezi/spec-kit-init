@@ -89,7 +89,7 @@ SDD（规格驱动开发）翻转传统开发流程：**规格是核心产出物
 | `AGENT_TITLE` | 文件 `#` 标题 | `# CLAUDE.md` | `# AGENTS.md` | `# Tips` | `# Rules` |
 | `AGENT_NAME` | 展示名称 | `Claude Code` | `Codex` | `GitHub Copilot` | `Cursor` |
 | `AGENT_SKILL_DIR` | skill 安装目录 | `.claude/skills` | `.agents/skills` | `.claude/skills`¹ | `.claude/skills`¹ |
-| `AGENT_SPECIFY` | specify --integration 参数 | `claude` | `codex` | — | — |
+| `AGENT_SPECIFY` | specify --integration 参数 | `claude` | `codex` | `N/A` | `N/A` |
 
 如检测到项目中已有指令文件（如 CLAUDE.md、AGENTS.md），可跳过询问直接使用对应平台的变量。
 
@@ -106,7 +106,7 @@ AGENT_FILE      = 指令文件路径
 AGENT_TITLE     = 文件标题
 AGENT_NAME      = 展示名称
 AGENT_SKILL_DIR = skill 安装目录
-AGENT_SPECIFY   = specify --integration 参数（claude/codex/留空）
+AGENT_SPECIFY   = specify --integration 参数（claude/codex/N/A）
 ```
 
 > 选择「其他」时，需逐一确认以上五项配置的取值。
@@ -126,7 +126,7 @@ AGENT_SPECIFY   = specify --integration 参数（claude/codex/留空）
 
 #### 1.4 执行 specify init
 
-> 此步仅在选择了 Claude Code 或 Codex 时执行（`{AGENT_SPECIFY}` 有值）。Copilot/Cursor 跳过。
+> 此步仅在选择了 Claude Code 或 Codex 时执行（`{AGENT_SPECIFY}` 为 `claude` 或 `codex`）。Copilot/Cursor 跳过。
 
 **开始前告知用户**：正在安装 specify-cli 并初始化 SDD 工作流，约需 1-2 分钟，请稍候。
 

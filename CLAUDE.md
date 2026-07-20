@@ -30,7 +30,7 @@
 | `SKILL.md` | **主入口**。定义 5 个初始化阶段（环境检测 → SDD 安装 → 经验沉淀 → **质量门禁** → 汇报），是全部逻辑的载体 |
 | `scripts/ensure-specify.sh` | bash 脚本，检测并安装 `specify-cli`（带网络重试和超时保护） |
 | `references/agent-instructions-template.md` | SDD 段落模板 + 经验库优先段模板，注入到目标项目的 AI 指令文件中 |
-| `templates/retro-skill.md` | `/retro` 复盘 Skill 的完整定义模板，含 3 种模式 + 5 层质量门禁 + 双角色对抗审查 + 去重机制 |
+| `templates/retro-skill.md` | `/retro` 复盘 Skill 的完整定义模板，含 3 种模式 + 5 层经验质量筛选 + 双角色对抗审查 + 去重机制 |
 | `templates/retro-references/mechanism-auditor.md` | 机制审计员审查 prompt 模板（判断经验是否揭示根因机制） |
 | `templates/retro-references/routing-auditor.md` | 路由审核员审查 prompt 模板（判断经验归入 constitution.md 还是 lessons.md） |
 | `templates/quality-gate-skill.md` | `/speckit-quality` 质量门禁命令的完整定义模板，含技术栈自动检测和工具映射 |

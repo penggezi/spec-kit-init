@@ -63,6 +63,8 @@ if ! command -v uv &>/dev/null; then
     echo "  macOS/Linux:          curl -LsSf https://astral.sh/uv/install.sh | sh"
     echo "  详见: https://docs.astral.sh/uv/"
     echo ""
+    echo "  > 当前终端为 Git Bash。如 PowerShell 命令不工作，请手动打开 PowerShell 执行。"
+    echo ""
     exit 1
 fi
 log_info "uv 已安装: $(uv --version)"
@@ -92,7 +94,12 @@ else
     echo "请检查："
     echo "  1. 网络连接是否正常"
     echo "  2. Git 是否已安装并配置"
-    echo "  3. GitHub 是否可访问"
+    echo "  3. GitHub 是否可访问（GitHub 在中国大陆可能不稳定，配置代理可改善）"
+    echo ""
+    echo "代理配置示例："
+    echo "  export HTTPS_PROXY=http://127.0.0.1:7890"
+    echo "  export HTTP_PROXY=http://127.0.0.1:7890"
+    echo "  然后重新运行本脚本即可。"
     echo ""
     echo "也可手动安装: uv tool install specify-cli --from git+https://github.com/github/spec-kit.git"
     exit 1
