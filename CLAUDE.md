@@ -28,23 +28,28 @@
 
 | 文件 | 用途 |
 |------|------|
-| `SKILL.md` | **主入口**。定义 6 个初始化阶段（环境检测 → SDD 安装 → 经验沉淀 → **质量门禁** → **Bug 修复工作流** → 汇报），是全部逻辑的载体 |
+| `SKILL.md` | **主入口**。定义 7 个阶段（幂等检查 → 环境检测 → SDD 安装 → 经验沉淀 → **质量门禁** → **Bug 修复工作流** → 汇报），是全部逻辑的载体 |
 | `scripts/ensure-specify.sh` | bash 脚本，检测并安装 `specify-cli`（带网络重试和超时保护） |
 | `references/agent-instructions-template.md` | SDD 段落模板 + 经验库优先段模板，注入到目标项目的 AI 指令文件中 |
+| `references/report-template.md` | 阶段 6 汇报模板，初始化完成后展示的汇总信息 |
 | `templates/retro-skill.md` | `/retro` 复盘 Skill 的完整定义模板，含 3 种模式 + 5 层经验质量筛选 + 双角色对抗审查 + 去重机制 |
 | `templates/retro-references/mechanism-auditor.md` | 机制审计员审查 prompt 模板（判断经验是否揭示根因机制） |
 | `templates/retro-references/routing-auditor.md` | 路由审核员审查 prompt 模板（判断经验归入 constitution.md 还是 lessons.md） |
 | `templates/quality-gate-skill.md` | `/speckit-quality` 质量门禁命令的完整定义模板，含 Git 变更检测、直接影响推导、文件/模块/全量范围升级、技术栈工具映射和结果归因 |
 
-### SKILL.md 的 6 个阶段
+### SKILL.md 的 7 个阶段
 
 ```
+阶段 0：初始化前检查（幂等性）
+  └── 0.1-0.4 检测已有初始化状态，支持补齐缺失组件或强制重新初始化
+
 阶段 1：分析 + 初始化
   ├── 1.1 环境检测（Python 3.11+、uv、Git）
-  ├── 1.2 选择 AI 编码工具（Claude Code / Codex / Copilot / Cursor / 自定义）
+  ├── 1.2 选择 AI 编码工具（优先自动检测，Claude Code / Codex / Copilot / Cursor / 自定义）
   ├── 1.3 代码库分析（已有项目时）
   ├── 1.4 执行 specify init（安装 SDD 工作流）
-  └── 1.5 可选：初始化 Constitution
+  ├── 1.5 可选：初始化 Constitution
+  └── 1.6 轻量确认（一句话确认后执行）
 
 阶段 2：合并产出指令文件 → 将 SDD 段注入目标项目指令文件
 
@@ -52,24 +57,23 @@
   ├── 3.1 创建 lessons.md + lessons.idx 骨架（物理隔离的轻量去重索引）
   ├── 3.2 安装 /retro skill
   ├── 3.2.1 安装 /retro 子代理审查模板（mechanism-auditor + routing-auditor）
-  ├── 3.3 改造 /speckit-plan（注入 lessons.md 必读）
-  ├── 3.4 改造 /speckit-implement（注入 lessons.md + 复盘询问）
+  ├── 3.3 改造 /speckit-plan（注入 lessons.md 必读）+ 版本锚定
+  ├── 3.4 改造 /speckit-implement（注入 lessons.md + 复盘询问）+ 版本锚定
   └── 3.5 验证闭环完整性（逐项确认所有文件存在、注入到位）
 
 阶段 4：代码质量门禁初始化
   ├── 4.1 安装 /speckit-quality skill
-  ├── 4.2 改造 /speckit-implement（注入代码质量门禁步骤）
+  ├── 4.2 改造 /speckit-implement（注入代码质量门禁步骤，含阶段 3.4 前置检查）+ 版本锚定
   └── 4.3 验证质量门禁完整性
 
 阶段 5：Bug 修复工作流初始化
   ├── 5.1 安装官方 Bug Extension（specify extension add bug）
-  ├── 5.2 验证安装完整性
-  ├── 5.3 注入增强（连接 lessons.md + 质量门禁 + 复盘）
-  ├── 5.4 复杂度升级规则（何时升级到完整 SDD 链路）
-  └── 5.5 记录安装状态
+  ├── 5.2 验证安装完整性并记录安装状态
+  ├── 5.3 注入增强（连接 lessons.md + 质量门禁 + 复盘，含安装状态前置检查）+ 版本锚定
+  └── 5.4 复杂度升级规则（何时升级到完整 SDD 链路）
 
-阶段 6：汇报（原阶段 5）
-  └── 展示初始化结果和可用命令（含 /speckit-quality 和 /speckit.bug.*）
+阶段 6：汇报
+  └── 读取 references/report-template.md 展示初始化结果和可用命令
 ```
 
 ### 关键设计决策

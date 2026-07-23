@@ -105,7 +105,7 @@ $ARGUMENTS
 
 #### 执行方式
 
-**子代理环境（Claude Code）**：分别 spawning 两个子代理。
+**子代理环境（Claude Code）**：分别启动两个子代理。
 
 1. 读取 `references/mechanism-auditor.md`，将其内容作为机制审计员子代理的 prompt
 2. 读取 `references/routing-auditor.md`，将其内容作为路由审核员子代理的 prompt
