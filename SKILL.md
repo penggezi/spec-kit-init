@@ -19,12 +19,13 @@ description: |
 
 ## 核心职责
 
-本 skill 是内置 `/init` 的增强替代版，一次完成四件事：
+本 skill 是内置 `/init` 的增强替代版，一次完成五件事：
 
 1. **代码库分析**（等同于 `/init`）→ 项目指令文件上半部分
 2. **SDD 工作流搭建** → 项目指令文件下半部分（`<!-- SDD:START/END -->` 标记包裹）
 3. **经验沉淀机制初始化** → `/retro` skill + `lessons.md` + 经验自动参考链路
 4. **代码质量门禁初始化** → `/speckit-quality` skill + implement 质量检查注入
+5. **Bug 修复工作流** → 自动安装官方 Bug Extension（`/speckit.bug.assess→fix→test`）
 
 **重要**：当本 skill 触发时，不要再调用内置 `/init`，本 skill 已包含其全部功能。
 
@@ -430,9 +431,84 @@ N. **代码质量门禁（Code Quality Gate）**：
 - [ ] `/speckit-implement` 中存在代码质量门禁步骤（完成验证之后、复盘提示之前）
 - [ ] 质量门禁步骤中包含技术栈检测逻辑、工具映射表、结果分级和跳过条件
 
-### 阶段 5：汇报
+### 阶段 5：Bug 修复工作流初始化
 
-按初始化操作顺序，逐一解释每个操作的作用和可选性，让用户理解 SDD 工作流的全貌：
+> **设计意图**：官方 Spec-Kit 提供 Bug Extension（`/speckit.bug.assess → /speckit.bug.fix → /speckit.bug.test`），为缺陷提供独立的评估、修复、验证流程。本阶段默认安装它，并接入本项目已有的经验库、质量门禁和复盘闭环。
+
+> 此步仅在 `{AGENT_SPECIFY}` 有值时执行（Claude Code / Codex）。Copilot/Cursor 跳过。
+
+#### 5.1 安装官方 Bug Extension
+
+在完成阶段 4 后直接安装。开始前告知用户：正在安装官方 Spec-Kit Bug Extension，随后可使用三步缺陷修复流程（assess → fix → test）。
+
+```bash
+specify extension add bug
+```
+
+> Bug Extension 已随 `specify-cli` 打包，无需添加社区 catalog 或从网络下载。
+
+> Bug Extension 的安装路径为 `.specify/extensions/bug/`，命令注册为 `/speckit.bug.assess`、`/speckit.bug.fix`、`/speckit.bug.test`。产物写入 `.specify/bugs/<slug>/` 目录。
+
+如已安装，跳过安装步骤。
+
+#### 5.2 验证安装完整性
+
+确认以下命令可用：
+- [ ] `/speckit.bug.assess` — 评估缺陷、定位根因路径、输出 assessment.md
+- [ ] `/speckit.bug.fix` — 实施最小修复、输出 fix.md
+- [ ] `/speckit.bug.test` — 验证修复并记录测试结果、输出 test.md
+
+确认产物目录：
+- [ ] `.specify/extensions/bug/` 存在
+- [ ] `.specify/bugs/` 目录可写入
+
+#### 5.3 注入增强：连接经验库 + 质量门禁 + 复盘
+
+Bug Extension 的三步流程本身已完整，在此之上接入本项目已有的增强机制：
+
+**改造 `/speckit.bug.assess`**（在评估步骤开始前注入）：
+- **REQUIRED**: 读取 `.specify/memory/lessons.md`，检查是否有与当前缺陷相关的历史经验或已知根因模式
+
+**改造 `/speckit.bug.test`**（在验证步骤完成后注入）：
+- 执行 `/speckit-quality`，确保修复代码通过静态质量门禁
+- 对 L2/L3 升级缺陷（有用户影响、需回滚/降级、数据安全风险）或同类问题重复发生的情况，询问是否执行 `/retro` 复盘
+
+**注入方式**：定位对应 SKILL.md 中的适当位置，用语义正则插入必要的读取/调用步骤。若正则匹配失败，在文件末尾追加插桩标记并告知用户。
+
+> 注意：`specify extension` 重新安装或升级时可能覆盖注入内容，届时需重新执行注入。
+
+#### 5.4 复杂度升级规则
+
+Bug Extension 适用于可快速定位和修复的缺陷。当满足以下任一条件时，应告知用户需要升级到完整 SDD 规格链路：
+
+| 条件 | 原因 |
+|------|------|
+| 修复会改变外部 API 契约、产品行为或用户可见流程 | 需要先确定 WHAT（规格） |
+| 涉及跨服务、跨模块或复杂状态一致性 | 需要方案设计（plan） |
+| 需要数据库迁移、数据修复或兼容性策略 | 需要完整评估影响范围 |
+| 涉及权限、安全、支付、并发或重大性能风险 | 需要架构评审 |
+| 根因表明原始需求或规格本身有缺陷 | 应先修复规格，再修代码 |
+| 无法确定"正确行为"是什么 | 需要产品决策，而非技术修复 |
+
+升级建议格式：
+```
+本次缺陷涉及的范围超出简单修复的边界，建议走完整 SDD 流程：
+  /speckit-specify → /speckit-plan → /speckit-tasks → /speckit-implement
+理由：{具体理由}
+是否自动转为规格驱动流程？(y/n)
+```
+
+#### 5.5 记录安装状态
+
+记录 `BUG_EXTENSION_INSTALLED=true`；若自动安装失败，则记录 `BUG_EXTENSION_INSTALLED=false` 和失败原因，供阶段 6 如实汇报。
+
+### 阶段 6：汇报（含 Bug 修复工作流）
+
+按初始化操作顺序，逐一解释每个操作的作用和可选性，让用户理解 SDD 工作流的全貌。
+
+> 以下汇报内容默认包含第 ⑦ 项 Bug Extension。仅当自动安装失败时，改为报告失败原因和手动重试命令 `specify extension add bug`。
+
+参考格式：
 
 ```
 本次初始化完成，以下按操作顺序说明每个环节的用途：
@@ -456,18 +532,25 @@ N. **代码质量门禁（Code Quality Gate）**：
    → 安装 /retro 命令 + 创建 lessons.md 经验库
    → 改造 /speckit-plan 和 /speckit-implement → 每次写代码前自动参考经验，写完后自动询问复盘
 
-   ⑥ 代码质量门禁初始化 ── 安装质量检查命令 + 注入 implement 质量门禁
-      → 安装 /speckit-quality 命令，随时手动运行质量检查
-      → 改造 /speckit-implement → 实现完成后自动执行质量门禁，通过后方提示复盘
+⑥ 代码质量门禁初始化 ── 安装质量检查命令 + 注入 implement 质量门禁
+   → 安装 /speckit-quality 命令，随时手动运行质量检查
+   → 改造 /speckit-implement → 实现完成后自动执行质量门禁，通过后方提示复盘
+
+⑦ Bug 修复工作流初始化 ── 安装官方 Bug Extension
+   → 提供 /speckit.bug.assess → fix → test 三步缺陷修复流程
+   → 接入 lessons.md 经验库 + 质量门禁 + 复盘，形成修复闭环
 
 ━━━━━━━━━━━━━━━━━━━━━━━━ 可选操作 ━━━━━━━━━━━━━━━━━━━━━━━━━
 
-⑦ 代码库分析（可选）── 分析已有项目结构，写入指令文件
+⑧ 代码库分析（可选）── 分析已有项目结构，写入指令文件
    → 空目录或新项目跳过此步
    → 已有项目执行后可让 AI 在后续会话中了解项目架构
 
-⑧ 初始化 Constitution（可选）── 定义项目的技术栈约束、架构边界、不可违反的规则
+⑨ 初始化 Constitution（可选）── 定义项目的技术栈约束、架构边界、不可违反的规则
    → 通过 /speckit-constitution 随时建立或修改
+
+⑩ Bug Extension 安装失败（需处理）── 请使用以下命令重试：
+   → specify extension add bug
 
 ━━━━━━━━━━━━━━━━━━━━━━━━ 可用的命令 ━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -478,6 +561,11 @@ N. **代码质量门禁（Code Quality Gate）**：
   /speckit-implement   → 按任务实现编码（完成后执行质量门禁，通过后方提示复盘）
   /speckit-quality     → 代码质量检查（自动检测技术栈并运行静态分析）
   /retro               → 经验复盘沉淀
+
+缺陷修复流程：
+  /speckit.bug.assess  → 评估缺陷、定位根因代码路径
+  /speckit.bug.fix     → 实施最小修复
+  /speckit.bug.test    → 验证修复并记录测试结果
 
 增强命令（按需使用）：
   /speckit-constitution   → 建立/修订项目原则
@@ -492,6 +580,8 @@ N. **代码质量门禁（Code Quality Gate）**：
   {AGENT_SKILL_DIR}/speckit-*/   ← SDD 命令
   {AGENT_SKILL_DIR}/retro/       ← 复盘命令
   {AGENT_SKILL_DIR}/speckit-quality/ ← 质量门禁命令
+  .specify/extensions/bug/      ← Bug Extension 命令
+  .specify/bugs/                ← 缺陷评估/修复/验证产物
 
 经验闭环：实现完成 → 质量门禁 → 复盘提示 → /retro 沉淀 → lessons.md 入库
            → 下次会话 {AGENT_FILE} 强制读 lessons.md → 经验被自动参考
@@ -507,10 +597,12 @@ N. **代码质量门禁（Code Quality Gate）**：
 - 不再调用内置 `/init`
 - 经验沉淀机制（/retro + lessons.md + speckit 改造）是初始化的一部分，不要跳过
 - 代码质量门禁（/speckit-quality + implement 质量检查）是初始化的一部分，不要跳过（仅 Claude Code / Codex 平台）
+- Bug 修复工作流（阶段 5）在 Claude Code / Codex 平台默认安装官方 Bug Extension；安装失败时必须报告原因和重试命令，不得静默跳过
 - **错误处理原则**：未特别说明的步骤，失败即终止并报告原因，不得静默继续。关键步骤的失败处理已在各阶段中单独标注
 - **回滚与恢复**：如果初始化在中间步骤失败，项目可能处于半初始化状态。按以下方式清理：
   - `specify init` 已完成但后续步骤失败 → `.specify/` 目录已创建，保留不变；`{AGENT_FILE}` 中若已注入 `<!-- SDD:...-->` 标记，手动删除标记段即可恢复
   - `specify init` 本身失败 → 没有任何文件变更，无需回滚
   - 经验沉淀步骤（阶段 3）已修改 `/speckit-plan` 或 `/speckit-implement` 但后续失败 → 在对应文件的 `<!-- ⚠ 自动追加...-->` 标记处删除注入内容即可恢复
   - 质量门禁步骤（阶段 4）已修改 `/speckit-implement` 但后续失败 → 在对应文件的 `<!-- ⚠ 自动追加...-->` 标记处删除质量门禁注入内容即可恢复
-  - **完整清理**：`rm -rf .specify/ {AGENT_SKILL_DIR}/speckit-* {AGENT_SKILL_DIR}/retro {AGENT_SKILL_DIR}/speckit-quality` + 从 `{AGENT_FILE}` 中移除 `<!-- SDD:START -->` 至 `<!-- SDD:END -->` 段
+  - Bug Extension 步骤（阶段 5）已安装但后续失败 → `.specify/extensions/bug/` 已创建，运行 `specify extension remove bug` 清理；`.specify/bugs/` 目录为空时可直接删除
+  - **完整清理**：`rm -rf .specify/ {AGENT_SKILL_DIR}/speckit-* {AGENT_SKILL_DIR}/retro {AGENT_SKILL_DIR}/speckit-quality` + `specify extension remove bug` + 从 `{AGENT_FILE}` 中移除 `<!-- SDD:START -->` 至 `<!-- SDD:END -->` 段
