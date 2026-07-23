@@ -12,12 +12,13 @@
 
 ## 项目概述
 
-`spec-kit-init` 是 Claude Code 的 Skill，用于替代内置 `/init` 命令。它一次完成四件事：
+`spec-kit-init` 是 Claude Code 的 Skill，用于替代内置 `/init` 命令。它一次完成五件事：
 
 1. **代码库分析** → 生成项目指令文件（CLAUDE.md / AGENTS.md 等）
 2. **SDD 工作流搭建** → 通过 `specify init` 安装 Spec-Kit 框架
 3. **经验沉淀机制初始化** → `/retro` skill + `lessons.md` + 经验自动参考链路
-4. **代码质量门禁初始化** → `/speckit-quality` skill + implement 质量检查注入
+4. **代码质量门禁初始化** → `/speckit-quality` skill + implement 增量质量检查注入
+5. **Bug 修复工作流初始化** → 官方 Bug Extension + lessons、质量门禁、复盘联动
 
 ## 架构要点
 
@@ -33,7 +34,7 @@
 | `templates/retro-skill.md` | `/retro` 复盘 Skill 的完整定义模板，含 3 种模式 + 5 层经验质量筛选 + 双角色对抗审查 + 去重机制 |
 | `templates/retro-references/mechanism-auditor.md` | 机制审计员审查 prompt 模板（判断经验是否揭示根因机制） |
 | `templates/retro-references/routing-auditor.md` | 路由审核员审查 prompt 模板（判断经验归入 constitution.md 还是 lessons.md） |
-| `templates/quality-gate-skill.md` | `/speckit-quality` 质量门禁命令的完整定义模板，含技术栈自动检测和工具映射 |
+| `templates/quality-gate-skill.md` | `/speckit-quality` 质量门禁命令的完整定义模板，含 Git 变更检测、直接影响推导、文件/模块/全量范围升级、技术栈工具映射和结果归因 |
 
 ### SKILL.md 的 6 个阶段
 
@@ -80,6 +81,7 @@
 - **双角色对抗审查**：每条经验经 mechanism-auditor（审查是否揭示根因机制）和 routing-auditor（审查归入 constitution 还是 lessons）独立审查，两个角色都通过才放行
 - **参考源勘误驱动**：经验挖掘不再依赖"回顾会话记录"，而是以"本次工作参考了什么"为线索，逐参考源回答"准确吗/完整吗/适用吗/费解吗"四个问题
 - **支持多平台**：Claude Code、Codex、GitHub Copilot、Cursor 各有不同的指令文件路径和配置参数
+- **增量质量门禁**：`templates/quality-gate-skill.md` 是质量范围规则的唯一事实来源。默认收集 Git 中已暂存、未暂存与未追踪的改动，并只加入有证据的直接影响范围；删除文件不直接 lint。公共契约、配置/依赖、跨模块或影响边界不明时才升级模块或全量，且必须报告升级原因；未修改区域的存量问题不得归因于本次改动。`SKILL.md`、README 与指令注入模板只引用该规则，不重复维护固定全仓库命令。
 
 ## Git 推送规范
 
@@ -105,7 +107,8 @@
 | 文档 | 触发更新的条件 |
 |------|---------------|
 | `VERSION.md` | **每次推送必更新**（版本号同步） |
-| `README.md` | Skill 描述变更、新增/移除支持的平台、流程步骤变更、前置依赖变更 |
+| `README.md` | Skill 描述变更、新增/移除支持的平台、流程步骤变更、前置依赖变更、质量门禁范围行为变更 |
+| `references/agent-instructions-template.md` | SDD 命令行为、质量门禁默认范围或复盘联动变更 |
 | `SKILL.md` 的阶段数量 | CLAUDE.md 中「SKILL.md 的 N 个阶段」描述需同步 |
 | `LICENSE` | 作者/年份变更 |
 
