@@ -127,13 +127,13 @@ spec-kit-init/
 ```
 1.1 环境检测 ──→ Python 3.11+ / uv / Git
 1.2 选择 AI 编码工具 ──→ 优先自动检测已有指令文件，未命中再询问用户
-1.3 代码库分析 ──→ 已有项目时分析架构/技术栈/构建命令（空目录跳过）
-1.4 specify init ──→ 安装 SDD 工作流框架（仅 Claude Code / Codex）
+1.3 确认执行 ──→ 展示即将执行的操作摘要，一句话确认
+1.4 代码库分析 ──→ 已有项目时分析架构/技术栈/构建命令（空目录跳过，与 1.5 并行）
+1.5 specify init ──→ 安装 SDD 工作流框架 + Bug Extension（仅 Claude Code / Codex，与 1.4 并行）
      ├── 调用 ensure-specify.sh 安装 specify-cli
-     ├── echo "" | specify init --here --integration <agent> --force --ignore-agent-tools
+     ├── echo "" | specify init --here --integration <agent> --force && specify extension add bug --force
      └── 清理 speckit-git-* 无关 skill
-1.5 Constitution 初始化 ──→ 可选，询问用户是否建立项目原则
-1.6 轻量确认 ──→ 一句话确认后执行后续阶段
+1.6 自动写入基本宪章 ──→ 自动生成 .specify/memory/constitution.md（后续可通过 /speckit-constitution 修订）
 ```
 
 ### 阶段 2：合并产出指令文件
@@ -200,7 +200,7 @@ Git 变更文件
 
 ### 阶段 5：Bug 修复工作流初始化
 
-在 Claude Code / Codex 项目中，初始化时会自动安装官方 Spec-Kit Bug Extension：
+Bug Extension 已在阶段 1.5 随 `specify init` 一同安装，此阶段负责验证安装完整性，并将 Bug 流程接入 `lessons.md`、`/speckit-quality` 与 `/retro`：
 
 ```text
 /speckit.bug.assess → 评估缺陷、追踪可疑代码路径
@@ -208,13 +208,7 @@ Git 变更文件
 /speckit.bug.test   → 重测缺陷并记录验证结果
 ```
 
-安装命令为：
-
-```bash
-specify extension add bug
-```
-
-每个缺陷的评估、修复和测试报告分别保存在 `.specify/bugs/<slug>/assessment.md`、`fix.md`、`test.md`。此阶段还会将 Bug 流程接入 `lessons.md`、`/speckit-quality` 与 `/retro`：评估前参考相关经验，验证后执行质量门禁；出现用户影响、回滚/降级、数据安全风险或重复问题时提示复盘。
+每个缺陷的评估、修复和测试报告分别保存在 `.specify/bugs/<slug>/assessment.md`、`fix.md`、`test.md`。评估前参考相关经验，验证后执行质量门禁；出现用户影响、回滚/降级、数据安全风险或重复问题时提示复盘。
 
 若修复会改变 API 契约、涉及跨服务/复杂状态、数据库迁移、安全权限或原始规格缺陷，应升级为完整 SDD 链路，而不是借 Bug 流程绕过规格设计。
 
