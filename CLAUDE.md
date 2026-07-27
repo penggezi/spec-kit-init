@@ -30,12 +30,12 @@
 |------|------|
 | `SKILL.md` | **主入口**。定义 7 个阶段（幂等检查 → 环境检测 → SDD 安装 → 经验沉淀 → **质量门禁** → **Bug 修复工作流** → 汇报），是全部逻辑的载体 |
 | `scripts/ensure-specify.sh` | bash 脚本，检测并安装 `specify-cli`（带网络重试和超时保护） |
-| `references/agent-instructions-template.md` | SDD 段落模板 + 经验库优先段模板，注入到目标项目的 AI 指令文件中 |
+| `assets/agent-instructions.md` | SDD 段落模板 + 经验库优先段模板，注入到目标项目的 AI 指令文件中 |
 | `references/report-template.md` | 阶段 6 汇报模板，初始化完成后展示的汇总信息 |
-| `templates/retro-skill.md` | `/retro` 复盘 Skill 的完整定义模板，含 3 种模式 + 5 层经验质量筛选 + 双角色对抗审查 + 去重机制 |
-| `templates/retro-references/mechanism-auditor.md` | 机制审计员审查 prompt 模板（判断经验是否揭示根因机制） |
-| `templates/retro-references/routing-auditor.md` | 路由审核员审查 prompt 模板（判断经验归入 constitution.md 还是 lessons.md） |
-| `templates/quality-gate-skill.md` | `/speckit-quality` 质量门禁命令的完整定义模板，含 Git 变更检测、直接影响推导、文件/模块/全量范围升级、技术栈工具映射和结果归因 |
+| `assets/retro-skill.md` | `/retro` 复盘 Skill 的完整定义模板，含 3 种模式 + 5 层经验质量筛选 + 双角色对抗审查 + 去重机制 |
+| `assets/retro-references/mechanism-auditor.md` | 机制审计员审查 prompt 模板（判断经验是否揭示根因机制） |
+| `assets/retro-references/routing-auditor.md` | 路由审核员审查 prompt 模板（判断经验归入 constitution.md 还是 lessons.md） |
+| `assets/quality-gate-skill.md` | `/speckit-quality` 质量门禁命令的完整定义模板，含 Git 变更检测、直接影响推导、文件/模块/全量范围升级、技术栈工具映射和结果归因 |
 
 ### SKILL.md 的 7 个阶段
 
@@ -78,13 +78,13 @@
 ### 关键设计决策
 
 - **非交互式终端兼容**：`specify init` 在 CI/agent 环境中会永久阻塞，需通过 `echo "" |` 管道发送空行让交互步骤使用默认选项
-- **渐进式加载**：SKILL.md 本身包含全部流程描述，`references/` 和 `templates/` 下的文件按需读取，避免提前占用上下文
+- **渐进式加载**：SKILL.md 本身包含全部流程描述，`references/` 和 `assets/` 下的文件按需读取，避免提前占用上下文
 - **回滚与恢复**：每个阶段都明确了失败时的清理方式（见 SKILL.md 末尾"约束"章节）
 - **物理隔离的轻量去重索引**：`lessons.idx` 与 `lessons.md` 分离，去重时先读索引（O(n) 恒定成本），命中后才读正文精确比对，避免扫描成本随经验积累膨胀
 - **双角色对抗审查**：每条经验经 mechanism-auditor（审查是否揭示根因机制）和 routing-auditor（审查归入 constitution 还是 lessons）独立审查，两个角色都通过才放行
 - **参考源勘误驱动**：经验挖掘不再依赖"回顾会话记录"，而是以"本次工作参考了什么"为线索，逐参考源回答"准确吗/完整吗/适用吗/费解吗"四个问题
 - **支持多平台**：Claude Code、Codex、GitHub Copilot、Cursor 各有不同的指令文件路径和配置参数
-- **增量质量门禁**：`templates/quality-gate-skill.md` 是质量范围规则的唯一事实来源。默认收集 Git 中已暂存、未暂存与未追踪的改动，并只加入有证据的直接影响范围；删除文件不直接 lint。公共契约、配置/依赖、跨模块或影响边界不明时才升级模块或全量，且必须报告升级原因；未修改区域的存量问题不得归因于本次改动。`SKILL.md`、README 与指令注入模板只引用该规则，不重复维护固定全仓库命令。
+- **增量质量门禁**：`assets/quality-gate-skill.md` 是质量范围规则的唯一事实来源。默认收集 Git 中已暂存、未暂存与未追踪的改动，并只加入有证据的直接影响范围；删除文件不直接 lint。公共契约、配置/依赖、跨模块或影响边界不明时才升级模块或全量，且必须报告升级原因；未修改区域的存量问题不得归因于本次改动。`SKILL.md`、README 与指令注入模板只引用该规则，不重复维护固定全仓库命令。
 - **Bug Extension 随 SDD 框架一同安装**：`specify extension add bug --force` 已随 `specify-cli` 打包，无需网络，直接链在阶段 1.5 的 `specify init` 后一步完成，消除独立的安装步骤。
 - **阶段间并行编排**：阶段 1.4（代码库分析）与 1.5（specify init + Bug Extension 安装）互不依赖，可并行执行。阶段 3-5 中，文件创建操作（3.1/3.2/4.1）可内部并行；speckit-plan 与 speckit-implement 的注入（3.3/3.4）可并行；质量门禁注入（4.2）与 Bug Extension 验证（5.1）可并行。并行编排是执行建议而非硬性约束，串行执行不会导致失败，仅耗时增加。预计节省约 25-35% 初始化时间。
 
@@ -113,7 +113,7 @@
 |------|---------------|
 | `VERSION.md` | **每次推送必更新**（版本号同步） |
 | `README.md` | Skill 描述变更、新增/移除支持的平台、流程步骤变更、前置依赖变更、质量门禁范围行为变更 |
-| `references/agent-instructions-template.md` | SDD 命令行为、质量门禁默认范围或复盘联动变更 |
+| `assets/agent-instructions.md` | SDD 命令行为、质量门禁默认范围或复盘联动变更 |
 | `SKILL.md` 的阶段数量 | CLAUDE.md 中「SKILL.md 的 N 个阶段」描述需同步 |
 | `LICENSE` | 作者/年份变更 |
 

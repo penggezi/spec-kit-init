@@ -18,7 +18,7 @@
 
 ## 条目格式
 
-详见 `templates/retro-skill.md` 中「文件格式约定」章节，以 retro-skill 中的定义为准。
+详见 `assets/retro-skill.md` 中「文件格式约定」章节，以 retro-skill 中的定义为准。
 
 ---
 

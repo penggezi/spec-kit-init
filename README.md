@@ -76,19 +76,24 @@ spec-kit-init/
 │                                              #   · 跨平台颜色兼容
 │
 ├── references/
-│   ├── agent-instructions-template.md         # 指令文件注入模板
-│   │                                          #   第 1 节: SDD 段落（<!-- SDD:START/END -->）
-│   │                                          #   第 2 节: 经验库优先段落（注入文件顶部）
-│   └── report-template.md                     # 阶段 6 汇报模板
-│                                              #   初始化完成后展示的汇总信息
+│   ├── injection-texts.md                     # 注入文本片段仓库（7 个节）
+│   │                                          #   各阶段向 speckit-* 注入的精确文本
+│   ├── report-template.md                     # 阶段 6 汇报模板
+│   │                                          #   初始化完成后展示的汇总信息
+│   └── rollback-guide.md                      # 初始化失败回滚指南
+│                                              #   按失败场景执行对应清理步骤
 │
-└── templates/
+└── assets/
+    ├── agent-instructions.md                  # 指令文件注入模板
+    │                                          #   第 1 节: SDD 段落（<!-- SDD:START/END -->）
+    │                                          #   第 2 节: 经验库优先段落（注入文件顶部）
+    ├── lessons-skeleton.md                    # 经验文件骨架模板
+    │                                          #   lessons.md + lessons.idx 初始内容
     ├── retro-skill.md                         # /retro 复盘 Skill 完整定义
     │                                          #   · 3 种模式（标准/纠正捕获/焦点）
     │                                          #   · 5 层经验质量筛选
     │                                          #   · 参考源勘误驱动（非会话回顾）
     │                                          #   · lessons.idx 轻量去重索引
-    │
     ├── quality-gate-skill.md                  # /speckit-quality 质量门禁命令完整定义
     │                                          #   · Git 变更与直接影响范围推导
     │                                          #   · 文件级/模块级/全量分层检查
@@ -105,12 +110,12 @@ spec-kit-init/
 |------|------|-----------|
 | `SKILL.md` | **主入口**，定义 7 个阶段的完整流程（含幂等检查） | 每次会话必读 |
 | `scripts/ensure-specify.sh` | 在阶段 1.4 被调用，安装 specify-cli | 仅在 Claude Code / Codex 平台执行 |
-| `references/agent-instructions-template.md` | 提供两个注入段落模板 | 阶段 2 按需读取 |
+| `assets/agent-instructions.md` | 提供两个注入段落模板 | 阶段 2 按需读取 |
 | `references/report-template.md` | 阶段 6 汇报模板，初始化完成后展示的汇总信息 | 阶段 6 按需读取 |
-| `templates/retro-skill.md` | /retro 命令的完整定义，写入目标项目 | 阶段 3.2 按需读取 |
-| `templates/quality-gate-skill.md` | /speckit-quality 命令的完整定义，写入目标项目 | 阶段 4.1 按需读取 |
-| `templates/retro-references/mechanism-auditor.md` | 对抗审查角色 1 的审查标准 | /retro 执行时由子代理读取 |
-| `templates/retro-references/routing-auditor.md` | 对抗审查角色 2 的路由标准 | /retro 执行时由子代理读取 |
+| `assets/retro-skill.md` | /retro 命令的完整定义，写入目标项目 | 阶段 3.2 按需读取 |
+| `assets/quality-gate-skill.md` | /speckit-quality 命令的完整定义，写入目标项目 | 阶段 4.1 按需读取 |
+| `assets/retro-references/mechanism-auditor.md` | 对抗审查角色 1 的审查标准 | /retro 执行时由子代理读取 |
+| `assets/retro-references/routing-auditor.md` | 对抗审查角色 2 的路由标准 | /retro 执行时由子代理读取 |
 
 ---
 
@@ -154,8 +159,8 @@ spec-kit-init/
      └── .specify/memory/lessons.idx → 轻量去重索引（与正文物理隔离）
 
 3.2 安装 /retro skill
-     ├── templates/retro-skill.md → {AGENT_SKILL_DIR}/retro/SKILL.md
-     └── templates/retro-references/ → {AGENT_SKILL_DIR}/retro/references/
+     ├── assets/retro-skill.md → {AGENT_SKILL_DIR}/retro/SKILL.md
+     └── assets/retro-references/ → {AGENT_SKILL_DIR}/retro/references/
 
 3.3 改造 /speckit-plan ──→ 注入 "MUST read lessons.md"
 
@@ -178,7 +183,7 @@ Git 变更文件
 
 ```
 4.1 安装 /speckit-quality skill
-     └── templates/quality-gate-skill.md → {AGENT_SKILL_DIR}/speckit-quality/SKILL.md
+     └── assets/quality-gate-skill.md → {AGENT_SKILL_DIR}/speckit-quality/SKILL.md
 
 4.2 改造 /speckit-implement ──→ 在完成验证和复盘提示之间插入代码质量门禁步骤
 
@@ -222,7 +227,7 @@ Bug Extension 已在阶段 1.5 随 `specify init` 一同安装，此阶段负责
 
 ### 渐进式加载
 
-SKILL.md 本身包含全部流程描述，`references/` 和 `templates/` 下的文件**按需读取**，仅在执行对应阶段时才加载，避免提前占用上下文。SKILL.md 中的表格明确标注了每个文件在何种场景下读取。
+SKILL.md 本身包含全部流程描述，`references/` 和 `assets/` 下的文件**按需读取**，仅在执行对应阶段时才加载，避免提前占用上下文。SKILL.md 中的表格明确标注了每个文件在何种场景下读取。
 
 ### 非交互式终端兼容
 

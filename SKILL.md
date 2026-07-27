@@ -35,12 +35,12 @@ description: |
 
 | 场景 | 文件 |
 |------|------|
-| 获取指令文件注入模板 | `references/agent-instructions-template.md` |
+| 获取指令文件注入模板 | `assets/agent-instructions.md` |
 | 获取注入文本和兜底追加文本 | `references/injection-texts.md` |
-| 获取经验文件骨架模板 | `references/lessons-templates.md` |
+| 获取经验文件骨架模板 | `assets/lessons-skeleton.md` |
 | 获取初始化失败回滚步骤 | `references/rollback-guide.md` |
-| 获取 /retro skill 模板 | `templates/retro-skill.md` |
-| 获取 /speckit-quality skill 模板 | `templates/quality-gate-skill.md` |
+| 获取 /retro skill 模板 | `assets/retro-skill.md` |
+| 获取 /speckit-quality skill 模板 | `assets/quality-gate-skill.md` |
 | 获取阶段 6 汇报模板 | `references/report-template.md` |
 
 按需读取，仅在执行对应阶段时才加载参考文件，避免提前占用上下文。
@@ -273,7 +273,7 @@ Constitution 是 SDD 的最高准则。初始化时自动写入一份基本宪�
 
 ### 阶段 2：合并产出指令文件
 
-读取 `references/agent-instructions-template.md` 获取注入模板。目标文件为阶段 1.2 选定的 `{AGENT_FILE}`。
+读取 `assets/agent-instructions.md` 获取注入模板。目标文件为阶段 1.2 选定的 `{AGENT_FILE}`。
 
 合并规则：
 
@@ -320,7 +320,7 @@ Constitution 是 SDD 的最高准则。初始化时自动写入一份基本宪�
 
 > **设计意图**：放在 `.specify/memory/` 下，与 `constitution.md` 同目录，确保 speckit 生态内所有经验资产集中管理，便于 `/speckit-plan` 和 `/speckit-implement` 统一读取。
 
-读取 `references/lessons-templates.md`，按其中的模板创建：
+读取 `assets/lessons-skeleton.md`，按其中的模板创建：
 - `.specify/memory/lessons.md` — 经验正文（最新在上）
 - `.specify/memory/lessons.idx` — 轻量去重索引（与正文物理隔离，append-only 写入）
 
@@ -328,7 +328,7 @@ Constitution 是 SDD 的最高准则。初始化时自动写入一份基本宪�
 
 > 如果 `{AGENT_SKILL_DIR}` 不可用或为 undefined（如自定义模式未指定），默认使用 `.claude/skills` 作为回退目录。
 
-读取 `templates/retro-skill.md`，将其内容写入 `{AGENT_SKILL_DIR}/retro/SKILL.md`。
+读取 `assets/retro-skill.md`，将其内容写入 `{AGENT_SKILL_DIR}/retro/SKILL.md`。
 
 如已有此文件，跳过创建。
 
@@ -336,10 +336,10 @@ Constitution 是 SDD 的最高准则。初始化时自动写入一份基本宪�
 
 > retro skill 的对抗审查依赖两个独立的审查角色 prompt 模板。这些文件需要和 SKILL.md 一起部署到 retro skill 目录下。
 
-将 `templates/retro-references/` 整个目录复制到 `{AGENT_SKILL_DIR}/retro/references/`：
+将 `assets/retro-references/` 整个目录复制到 `{AGENT_SKILL_DIR}/retro/references/`：
 
 ```bash
-cp -r templates/retro-references/ {AGENT_SKILL_DIR}/retro/references/
+cp -r assets/retro-references/ {AGENT_SKILL_DIR}/retro/references/
 ```
 
 确认部署后的文件结构：
@@ -407,11 +407,11 @@ cp -r templates/retro-references/ {AGENT_SKILL_DIR}/retro/references/
 
 > 此阶段仅在选择了 Claude Code 或 Codex 时执行（`{AGENT_SPECIFY}` 有值）。Copilot/Cursor 跳过。
 
-> **设计意图**：在 SDD 工作流中增加代码质量检查环节，确保“写完代码”到“复盘沉淀”之间有一个质量门禁。默认检查 Git 变更文件及有证据的直接影响范围，避免无关存量诊断污染上下文；只有改动风险、影响边界或用户要求触发时才升级至模块级或全量检查。具体范围算法、技术栈命令与结果归因以 `templates/quality-gate-skill.md` 为唯一事实来源。
+> **设计意图**：在 SDD 工作流中增加代码质量检查环节，确保”写完代码”到”复盘沉淀”之间有一个质量门禁。默认检查 Git 变更文件及有证据的直接影响范围，避免无关存量诊断污染上下文；只有改动风险、影响边界或用户要求触发时才升级至模块级或全量检查。具体范围算法、技术栈命令与结果归因以 `assets/quality-gate-skill.md` 为唯一事实来源。
 
 #### 4.1 安装 /speckit-quality skill ⚡第一波
 
-读取 `templates/quality-gate-skill.md`，将其内容写入 `{AGENT_SKILL_DIR}/speckit-quality/SKILL.md`。
+读取 `assets/quality-gate-skill.md`，将其内容写入 `{AGENT_SKILL_DIR}/speckit-quality/SKILL.md`。
 
 如已有此文件，跳过创建。
 
