@@ -122,17 +122,17 @@ $ARGUMENTS
 
 ---
 
-### 4. 去重（基于 lessons.idx）
+### 4. 去重（基于 lessons-index.md）
 
-写入前，读取 `.specify/memory/lessons.idx`（如文件不存在则跳过此步）。
+写入前，读取 `.specify/memory/lessons-index.md`（如文件不存在则跳过此步）。
 
-`lessons.idx` 是一个独立的轻量索引文件，每行一条记录，格式为：
+`lessons-index.md` 是一个独立的轻量索引文件，每行一条记录，格式为：
 
 ```
 YYYY-MM-DD · 根因关键词 · 简述
 ```
 
-**读取方式**：先只读 `lessons.idx` 做根因关键词比对，命中时才 Read `lessons.md` 对应正文做精确比对。索引文件极轻量，确保去重扫描不随经验积累而膨胀。
+**读取方式**：先只读 `lessons-index.md` 做根因关键词比对，命中时才 Read `lessons.md` 对应正文做精确比对。索引文件极轻量，确保去重扫描不随经验积累而膨胀。
 
 比对规则：不是看标题或文字是否相似，而是比对根因+解法组合：
 
@@ -165,7 +165,7 @@ YYYY-MM-DD · 根因关键词 · 简述
 按用户确认结果执行：
 
 - **A. constitution.md**：将宪章修订建议写入 `.specify/memory/constitution.md`，标明"待评审"状态
-- **B. lessons.md**：追加到 `.specify/memory/lessons.md` 顶部（最新在上），同时往 `lessons.idx` 追加一行索引记录
+- **B. lessons.md**：追加到 `.specify/memory/lessons.md` 顶部（最新在上），同时往 `lessons-index.md` 追加一行索引记录
 
 ### 7. 最终总结
 
@@ -217,9 +217,9 @@ YYYY-MM-DD · 根因关键词 · 简述
 
 执行与标准复盘相同的对抗审查（机制审计+路由审核），但不单独 spawning 子代理——因为是轻量模式，读取 `references/mechanism-auditor.md` 和 `references/routing-auditor.md` 后在 prompt 内分步完成即可。
 
-#### 4. 去重（基于 lessons.idx）
+#### 4. 去重（基于 lessons-index.md）
 
-读取 `.specify/memory/lessons.idx` 检查是否已有相似的根因条目。重复则静默跳过（不追问用户）。
+读取 `.specify/memory/lessons-index.md` 检查是否已有相似的根因条目。重复则静默跳过（不追问用户）。
 
 #### 5. 确认与写入
 
@@ -234,7 +234,7 @@ YYYY-MM-DD · 根因关键词 · 简述
 - 非业务（自动写入）：DAO 层应该用 JdbcTemplate、public 方法必须写文档
 - 业务（需确认）：这个订单状态机不支持逆向流转、退款金额上限是 5000
 
-写入 `lessons.md` 顶部，同时往 `lessons.idx` 追加一行索引记录。一句话告知用户结果。
+写入 `lessons.md` 顶部，同时往 `lessons-index.md` 追加一行索引记录。一句话告知用户结果。
 
 
 ## 焦点复盘模式
@@ -283,9 +283,9 @@ YYYY-MM-DD · 根因关键词 · 简述
 - 补充：参考源遗漏了关键信息
 - 解读：参考源没说错但很费解，需要重新解释
 
-### lessons.idx 索引文件格式
+### lessons-index.md 索引文件格式
 
-`.specify/memory/lessons.idx` 是一个独立的轻量索引文件，由 `/retro` 自动维护。
+`.specify/memory/lessons-index.md` 是一个独立的轻量索引文件，由 `/retro` 自动维护。
 
 格式：每行一条记录，字段用 ` · ` 分隔（空格+中间点+空格）：
 
@@ -295,9 +295,9 @@ YYYY-MM-DD · 根因关键词 · 简述
 
 设计意图：
 - **物理隔离**：索引与正文分离，确保去重扫描成本为 O(n) 且不随经验积累膨胀
-- **写入方式**：新经验写入 `lessons.md` 时，同步往 `lessons.idx` **末尾追加**一行索引
-- **读取方式**：复盘时先只读 `lessons.idx`，命中关键词后才读取 `lessons.md` 对应正文做精确比对
-- **追加方向说明**：`lessons.md` 新条目插在顶部（方便人读，最新在上），而 `lessons.idx` 追加到末尾（索引文件为纯扫描用途，append-only 写入性能最优）。两者方向不同是设计使然——人读正文需要时效倒序，机器扫索引需要顺序追加。
+- **写入方式**：新经验写入 `lessons.md` 时，同步往 `lessons-index.md` **末尾追加**一行索引
+- **读取方式**：复盘时先只读 `lessons-index.md`，命中关键词后才读取 `lessons.md` 对应正文做精确比对
+- **追加方向说明**：`lessons.md` 新条目插在顶部（方便人读，最新在上），而 `lessons-index.md` 追加到末尾（索引文件为纯扫描用途，append-only 写入性能最优）。两者方向不同是设计使然——人读正文需要时效倒序，机器扫索引需要顺序追加。
 
 ---
 

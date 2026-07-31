@@ -10,7 +10,7 @@
 
 ```
    - **MUST** also read `.specify/memory/lessons.md`（项目级实战经验，如有相关条目须在方案中显式引用）：
-     1. 先读取 `.specify/memory/lessons.idx`，扫描是否有与当前功能相关的关键词
+     1. 先读取 `.specify/memory/lessons-index.md`，扫描是否有与当前功能相关的关键词
      2. 有命中 → 读取 `lessons.md` 中对应的具体条目，在方案中显式引用
      3. 无命中 → 告知用户"lessons.md 中暂无本功能相关经验"，继续后续步骤
 ```
@@ -22,7 +22,7 @@
 ## ⚠ 经验库注入（由 spec-kit-init 追加）
 
 在执行 plan 前，**MUST** 按以下步骤读取经验库：
-1. 先读取 `.specify/memory/lessons.idx`（极轻量索引），扫描是否有与当前功能相关的关键词
+1. 先读取 `.specify/memory/lessons-index.md`（极轻量索引），扫描是否有与当前功能相关的关键词
 2. 有命中 → 读取 `lessons.md` 中对应的具体条目，在方案中显式引用
 3. 无命中 → 告知用户"暂无相关经验"，继续后续步骤
 ```
@@ -34,7 +34,7 @@
 ### 2.1 正则匹配成功时插入
 
 ```
-   - **必须** 读取 `.specify/memory/lessons.idx`（极轻量索引），扫描是否有与当前实现相关的关键词：
+   - **必须** 读取 `.specify/memory/lessons-index.md`（极轻量索引），扫描是否有与当前实现相关的关键词：
      1. 有命中 → 读取 `lessons.md` 中对应的具体条目，在实现中遵循
      2. 无命中 → 继续后续步骤，无需读取完整 `lessons.md`
 ```
@@ -72,7 +72,7 @@
 ## ⚠ 经验库注入（由 spec-kit-init 追加）
 
 1. 实现开始前，**必须** 按以下步骤读取经验库：
-   - 先读取 `.specify/memory/lessons.idx`，扫描是否有与当前实现相关的关键词
+   - 先读取 `.specify/memory/lessons-index.md`，扫描是否有与当前实现相关的关键词
    - 有命中 → 读取 `lessons.md` 中对应的具体条目
    - 无命中 → 继续后续步骤
 2. 实现完成后，**主动询问用户**是否执行 `/retro` 复盘。
@@ -123,7 +123,7 @@ N. **代码质量门禁（Code Quality Gate）**：
 
 ```
 - **必须** 读取项目经验库：
-  1. 先读取 `.specify/memory/lessons.idx`，扫描是否有与当前缺陷相关的关键词（同类缺陷、已知根因模式）
+  1. 先读取 `.specify/memory/lessons-index.md`，扫描是否有与当前缺陷相关的关键词（同类缺陷、已知根因模式）
   2. 有命中 → 读取 `lessons.md` 中对应的具体条目，在评估中显式引用
   3. 无命中 → 告知用户"经验库中暂无本缺陷相关记录"，继续评估
 ```
@@ -135,7 +135,7 @@ N. **代码质量门禁（Code Quality Gate）**：
 ## ⚠ 经验库注入（由 spec-kit-init 追加）
 
 在评估缺陷之前，**必须** 按以下步骤读取经验库：
-1. 先读取 `.specify/memory/lessons.idx`，扫描是否有与当前缺陷相关的关键词
+1. 先读取 `.specify/memory/lessons-index.md`，扫描是否有与当前缺陷相关的关键词
 2. 有命中 → 读取 `lessons.md` 中对应的具体条目，在评估中引用
 3. 无命中 → 继续评估
 ```

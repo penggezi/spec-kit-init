@@ -25,7 +25,7 @@
 ### 文件级依赖
 
 ```
-lessons.md + lessons.idx (3.1)           ← 独立，无依赖
+lessons.md + lessons-index.md (3.1)           ← 独立，无依赖
 retro skill (3.2 + 3.2.1)               ← 独立，无依赖
 speckit-quality skill (4.1)             ← 独立，无依赖
 ```

@@ -88,12 +88,12 @@ spec-kit-init/
     │                                          #   第 1 节: SDD 段落（<!-- SDD:START/END -->）
     │                                          #   第 2 节: 经验库优先段落（注入文件顶部）
     ├── lessons-skeleton.md                    # 经验文件骨架模板
-    │                                          #   lessons.md + lessons.idx 初始内容
+    │                                          #   lessons.md + lessons-index.md 初始内容
     ├── retro-skill.md                         # /retro 复盘 Skill 完整定义
     │                                          #   · 3 种模式（标准/纠正捕获/焦点）
     │                                          #   · 5 层经验质量筛选
     │                                          #   · 参考源勘误驱动（非会话回顾）
-    │                                          #   · lessons.idx 轻量去重索引
+    │                                          #   · lessons-index.md 轻量去重索引
     ├── quality-gate-skill.md                  # /speckit-quality 质量门禁命令完整定义
     │                                          #   · Git 变更与直接影响范围推导
     │                                          #   · 文件级/模块级/全量分层检查
@@ -158,7 +158,7 @@ spec-kit-init/
 ```
 3.1 创建经验文件骨架
      ├── .specify/memory/lessons.md  → 经验正文（最新在上）
-     └── .specify/memory/lessons.idx → 轻量去重索引（与正文物理隔离）
+     └── .specify/memory/lessons-index.md → 轻量去重索引（与正文物理隔离）
 
 3.2 安装 /retro skill
      ├── assets/retro-skill.md → {AGENT_SKILL_DIR}/retro/SKILL.md
@@ -247,7 +247,7 @@ SKILL.md 本身包含全部流程描述，`references/` 和 `assets/` 下的文�
 
 ### 物理隔离的轻量去重索引
 
-传统做法是将去重信息嵌入 `lessons.md` 正文（如 frontmatter 中的 hash），但这会导致去重扫描成本随经验积累线性膨胀。本项目的方案是将索引与正文**物理隔离**——`lessons.idx` 只存一行摘要（`YYYY-MM-DD · 根因关键词 · 简述`），复盘时先读索引做关键词比对，命中后才读正文做精确比对。确保 O(n) 扫描成本恒定。
+传统做法是将去重信息嵌入 `lessons.md` 正文（如 frontmatter 中的 hash），但这会导致去重扫描成本随经验积累线性膨胀。本项目的方案是将索引与正文**物理隔离**——`lessons-index.md` 只存一行摘要（`YYYY-MM-DD · 根因关键词 · 简述`），复盘时先读索引做关键词比对，命中后才读正文做精确比对。确保 O(n) 扫描成本恒定。
 
 ### 参考源勘误驱动的经验挖掘
 

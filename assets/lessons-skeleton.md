@@ -25,16 +25,16 @@
 <!-- 新条目从这里向上追加 -->
 ```
 
-## lessons.idx 模板
+## lessons-index.md 模板
 
 ```
-# 经验去重索引（lessons.idx — 由 /retro 自动维护）
+# 经验去重索引（lessons-index.md — 由 /retro 自动维护）
 # 格式: YYYY-MM-DD · 根因关键词 · 简述
 # 每行一条，新条目追加到文件末尾
 
 # ⚠️ 注意：lessons.md 新条目插入文件顶部（方便人读，最新在上），
-# lessons.idx 追加到文件末尾（append-only 写入性能最优）。
+# lessons-index.md 追加到文件末尾（append-only 写入性能最优）。
 # 两者方向相反是设计使然，不要因为方向不同而视为 Bug。
 ```
 
-> **设计意图**：将索引与正文物理隔离。复盘时先只读 `lessons.idx`（极轻量）做根因关键词比对，命中后才读取 `lessons.md` 正文做精确比对。确保去重扫描不随经验积累而膨胀。
+> **设计意图**：将索引与正文物理隔离。复盘时先只读 `lessons-index.md`（极轻量）做根因关键词比对，命中后才读取 `lessons.md` 正文做精确比对。确保去重扫描不随经验积累而膨胀。

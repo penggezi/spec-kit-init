@@ -27,7 +27,7 @@
 
 这三个步骤互不依赖——它们各自创建/写入独立文件：
 
-- **3.1 创建经验文件** → 写入 `.specify/memory/lessons.md` + `lessons.idx`
+- **3.1 创建经验文件** → 写入 `.specify/memory/lessons.md` + `lessons-index.md`
 - **3.2 安装 /retro** → 写入 `{AGENT_SKILL_DIR}/retro/SKILL.md` + 复制审查模板
 - **4.1 安装 /speckit-quality** → 写入 `{AGENT_SKILL_DIR}/speckit-quality/SKILL.md`
 

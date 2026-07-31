@@ -319,7 +319,7 @@ Constitution 是 SDD 的最高准则。初始化时自动写入一份基本宪�
 
 读取 `assets/lessons-skeleton.md`，按其中的模板创建：
 - `.specify/memory/lessons.md` — 经验正文（最新在上）
-- `.specify/memory/lessons.idx` — 轻量去重索引（与正文物理隔离，append-only 写入）
+- `.specify/memory/lessons-index.md` — 轻量去重索引（与正文物理隔离，append-only 写入）
 
 #### 3.2 安装 /retro skill ⚡第一波
 
@@ -366,7 +366,7 @@ cp -r assets/retro-references/ {AGENT_SKILL_DIR}/retro/references/
 
 用语义正则定位到 "Load context" 相关步骤（匹配 `Load context`、`加载上下文` 或类似小节标题），在该步骤的读取列表中 `constitution.md` 之后追加一行。
 
-读取 `references/injection-texts.md` 第 1 节，获取注入文本和兜底追加文本。注入内容使用**两步读取**模式：先扫 `lessons.idx` 判断相关性，命中后才读 `lessons.md` 具体条目。
+读取 `references/injection-texts.md` 第 1 节，获取注入文本和兜底追加文本。注入内容使用**两步读取**模式：先扫 `lessons-index.md` 判断相关性，命中后才读 `lessons.md` 具体条目。
 
 **正则匹配失败时**：使用第 1.2 节兜底追加文本，追加后明确告知用户："/speckit-plan 自动注入未完全成功（模板结构已变化），已在文件末尾追加插桩，请人工确认并调整位置。"
 
@@ -387,7 +387,7 @@ cp -r assets/retro-references/ {AGENT_SKILL_DIR}/retro/references/
 
 **改动 A**：用语义正则定位到实现上下文读取步骤（匹配如 `Load and analyze`、`implementation context`、`加载实现上下文` 等模式），在 `constitution.md` 相关的读取行之前插入。
 
-读取 `references/injection-texts.md` 第 2 节获取注入文本。注入内容使用**两步读取**模式：先扫 `lessons.idx` 判断相关性，命中后才读 `lessons.md` 具体条目。
+读取 `references/injection-texts.md` 第 2 节获取注入文本。注入内容使用**两步读取**模式：先扫 `lessons-index.md` 判断相关性，命中后才读 `lessons.md` 具体条目。
 
 **改动 B**：用语义正则定位到 "Completion validation" 或最后验证步骤之后、Extension hooks 之前的区域，插入复盘提示步骤。
 
@@ -503,7 +503,7 @@ Bug Extension 的三步流程本身已完整，在此之上接入本项目已有
 
 用语义正则定位到评估步骤开始前（匹配 `Assess`、`评估`、`analyze the bug` 等模式），在上下文读取步骤中插入。
 
-读取 `references/injection-texts.md` 第 5 节获取注入文本和兜底追加文本。注入内容使用**两步读取**模式：先扫 `lessons.idx` 判断相关性，命中后才读 `lessons.md` 具体条目。
+读取 `references/injection-texts.md` 第 5 节获取注入文本和兜底追加文本。注入内容使用**两步读取**模式：先扫 `lessons-index.md` 判断相关性，命中后才读 `lessons.md` 具体条目。
 
 **正则匹配失败时**：使用第 5.2 节兜底追加文本，追加后明确告知用户："/speckit.bug.assess 自动注入未完全成功（模板结构已变化），已在文件末尾追加插桩，请人工确认并调整位置。"
 
