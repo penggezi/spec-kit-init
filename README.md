@@ -109,9 +109,11 @@ spec-kit-init/
 | 文件 | 角色 | 被读取时机 |
 |------|------|-----------|
 | `SKILL.md` | **主入口**，定义 7 个阶段的完整流程（含幂等检查） | 每次会话必读 |
-| `scripts/ensure-specify.sh` | 在阶段 1.4 被调用，安装 specify-cli | 仅在 Claude Code / Codex 平台执行 |
+| `scripts/ensure-specify.sh` | 在阶段 1.5 被调用，安装 specify-cli | 仅在 Claude Code / Codex 平台执行 |
 | `assets/agent-instructions.md` | 提供两个注入段落模板 | 阶段 2 按需读取 |
 | `references/report-template.md` | 阶段 6 汇报模板，初始化完成后展示的汇总信息 | 阶段 6 按需读取 |
+| `references/parallel-orchestration.md` | 阶段 3-5 并行编排方案（依赖图 + 每波说明） | 阶段 3-5 执行时按需读取 |
+| `references/platform-support-matrix.md` | 四平台功能支持矩阵 + 组件依赖矩阵 + 补齐决策表 | 阶段 0.3 按需读取 |
 | `assets/retro-skill.md` | /retro 命令的完整定义，写入目标项目 | 阶段 3.2 按需读取 |
 | `assets/quality-gate-skill.md` | /speckit-quality 命令的完整定义，写入目标项目 | 阶段 4.1 按需读取 |
 | `assets/retro-references/mechanism-auditor.md` | 对抗审查角色 1 的审查标准 | /retro 执行时由子代理读取 |
