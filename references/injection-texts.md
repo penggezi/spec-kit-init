@@ -28,7 +28,7 @@
 ### 2.1 正则匹配成功时插入
 
 ```
-   - **REQUIRED**: Read `.specify/memory/lessons.md` for project-level lessons learned (skip if file doesn't exist)
+   - **必须** 读取 `.specify/memory/lessons.md` 中的项目实战经验（文件不存在则跳过）
 ```
 
 ---
@@ -63,7 +63,7 @@
 <!-- ⚠ 自动追加，请人工确认位置是否正确 -->
 ## ⚠ 经验库注入（由 spec-kit-init 追加）
 
-1. 实现开始前，**REQUIRED** 读取 `.specify/memory/lessons.md`（如存在）。
+1. 实现开始前，**必须** 读取 `.specify/memory/lessons.md`（如存在）。
 2. 实现完成后，**主动询问用户**是否执行 `/retro` 复盘。
 ```
 
@@ -106,12 +106,12 @@ N. **代码质量门禁（Code Quality Gate）**：
 
 ---
 
-## 5. speckit-bug-assess（阶段 5.3.1）
+## 5. speckit-bug-assess（阶段 5.2.1）
 
 ### 5.1 正则匹配成功时插入
 
 ```
-- **REQUIRED**: Read `.specify/memory/lessons.md` for project-level lessons learned; check for historical experience or known root-cause patterns related to the current bug (skip if file doesn't exist)
+- **必须** 读取 `.specify/memory/lessons.md` 中的项目实战经验，检查是否有与当前缺陷相关的历史经验或已知根因模式（文件不存在则跳过）
 ```
 
 ### 5.2 兜底追加
@@ -120,24 +120,24 @@ N. **代码质量门禁（Code Quality Gate）**：
 <!-- ⚠ 自动追加，请人工确认位置是否正确 -->
 ## ⚠ 经验库注入（由 spec-kit-init 追加）
 
-Before assessing the bug, **REQUIRED**: read `.specify/memory/lessons.md` and check for historical experience or known root-cause patterns related to the current bug.
+在评估缺陷之前，**必须** 读取 `.specify/memory/lessons.md` 中的项目实战经验，检查是否有与当前缺陷相关的历史经验或已知根因模式。
 ```
 
 ---
 
-## 6. speckit-bug-test（阶段 5.3.2）
+## 6. speckit-bug-test（阶段 5.2.2）
 
 ### 6.1 正则匹配成功时插入
 
 ```
-N. **Quality Gate & Retrospective Integration**:
+N. **质量门禁与复盘联动**：
 
-    a. Run `/speckit-quality` to execute the code quality gate (default: Git change scope), ensuring the fix passes static checks.
-    b. After the quality gate passes, determine whether a retrospective is needed:
-       - L2/L3 escalated bugs (user impact, rollback/downgrade, data security risk)
-       - Recurring issues of the same type (related entries already exist in lessons.md)
-       - Non-obvious root causes or pitfalls discovered during the fix
-       → If any condition is met, proactively ask the user whether to run `/retro`.
+    a. 调用 `/speckit-quality` 执行代码质量门禁（默认范围：Git 变更），确保修复通过静态检查。
+    b. 质量门禁通过后，判断是否需要复盘：
+       - L2/L3 升级缺陷（用户影响、回滚/降级、数据安全风险）
+       - 同类型反复出现的缺陷（lessons.md 中已有相关条目）
+       - 修复过程中发现的非显然根因或陷阱
+       → 满足任一条件时，主动询问用户是否执行 `/retro`。
 ```
 
 ### 6.2 兜底追加
@@ -146,13 +146,13 @@ N. **Quality Gate & Retrospective Integration**:
 <!-- ⚠ 自动追加，请人工确认位置是否正确 -->
 ## ⚠ 质量门禁与复盘联动（由 spec-kit-init 追加）
 
-1. After verification is complete, run `/speckit-quality` to ensure the fix passes the quality gate.
-2. For L2/L3 escalated bugs or recurring issues, ask the user whether to run `/retro`.
+1. 验证完成后，调用 `/speckit-quality` 执行代码质量门禁，确保修复通过静态检查。
+2. 对于 L2/L3 升级缺陷或同类型反复出现的缺陷，主动询问用户是否执行 `/retro`。
 ```
 
 ---
 
-## 7. 复杂度升级规则（阶段 5.4）
+## 7. 复杂度升级规则（阶段 5.3）
 
 Bug Extension 适用于可快速定位和修复的缺陷。当满足以下任一条件时，应告知用户需要升级到完整 SDD 规格链路：
 
@@ -173,3 +173,59 @@ Bug Extension 适用于可快速定位和修复的缺陷。当满足以下任一
 理由：{具体理由}
 是否自动转为规格驱动流程？(y/n)
 ```
+
+---
+
+## 8. 注入兼容性锚点定义
+
+以下为各 spec-kit skill 文件中用于结构匹配的**锚点标题列表**。在注入前，读取目标文件，统计以下锚点在该文件中的命中率，判断结构兼容性。
+
+### 8.1 speckit-plan 锚点（阶段 3.3）
+
+用于定位「Load context」步骤的锚点：
+
+```
+Load context, 加载上下文, load context, Load and analyze the implementation context, Load implementation context
+```
+
+> 匹配率 = 命中的锚点数 / 总锚点数（5 个）。匹配率 ≥ 60%（3/5）时正常注入；< 60% 时走兜底。
+
+### 8.2 speckit-implement 锚点（阶段 3.4 + 4.2）
+
+用于定位「实现上下文读取」步骤的锚点：
+
+```
+Load and analyze, implementation context, 加载实现上下文, Load implementation context, Read implementation context
+```
+
+用于定位「Completion validation」步骤的锚点：
+
+```
+Completion validation, 完成验证, Verify completion, Implementation complete, Final validation
+```
+
+> 匹配率为两组锚点分别计算。任一组匹配率 < 50% 时，该改动走兜底。
+
+### 8.3 speckit-bug-assess 锚点（阶段 5.2.1）
+
+用于定位「评估步骤」的锚点：
+
+```
+Assess, 评估, analyze the bug, Bug assessment, Assessment steps
+```
+
+> 匹配率 = 命中的锚点数 / 总锚点数（5 个）。匹配率 ≥ 60%（3/5）时正常注入。
+
+### 8.4 speckit-bug-test 锚点（阶段 5.2.2）
+
+用于定位「验证完成步骤」的锚点：
+
+```
+test complete, verification done, 验证完成, Test complete, Verification steps
+```
+
+> 匹配率 = 命中的锚点数 / 总锚点数（5 个）。匹配率 ≥ 60%（3/5）时正常注入。
+
+### 8.5 已知兼容版本
+
+本 Skill 开发时 spec-kit 的兼容版本范围为 `>=0.0.22`。版本号通过阶段 1.5 的 `specify --version` 获取。

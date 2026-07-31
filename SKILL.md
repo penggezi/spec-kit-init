@@ -42,6 +42,8 @@ description: |
 | 获取 /retro skill 模板 | `assets/retro-skill.md` |
 | 获取 /speckit-quality skill 模板 | `assets/quality-gate-skill.md` |
 | 获取阶段 6 汇报模板 | `references/report-template.md` |
+| 获取阶段 3-5 并行编排方案 | `references/parallel-orchestration.md` |
+| 获取平台支持矩阵与组件依赖 | `references/platform-support-matrix.md` |
 
 按需读取，仅在执行对应阶段时才加载参考文件，避免提前占用上下文。
 
@@ -84,10 +86,13 @@ SDD（规格驱动开发）翻转传统开发流程：**规格是核心产出物
 
 #### 0.3 用户选择"补齐缺失组件"
 
-根据检查结果，跳过已完成的阶段，仅执行缺失的步骤。例如：
-- 已有 `.specify/` 和 speckit-* 命令 → 跳过阶段 1.4
+根据检查结果，跳过已完成的阶段，仅执行缺失的步骤。
+
+**判断依赖关系**：补齐时需考虑组件间的依赖顺序。读取 `references/platform-support-matrix.md` 中的「组件依赖矩阵」和「补齐场景决策表」，按依赖关系确定执行顺序。例如：
+- 已有 `.specify/` 和 speckit-* 命令 → 跳过阶段 1.5
 - 缺少 retro skill → 仅执行阶段 3.2
 - 缺少 quality gate → 仅执行阶段 4
+- speckit-implement 缺少两项注入 → 先执行 3.4（经验注入）再执行 4.2（质量门禁注入），因为 4.2 需要知道 3.4 的注入路径
 
 #### 0.4 用户选择"强制重新初始化"
 
@@ -183,6 +188,7 @@ AGENT_SPECIFY   = specify --integration 参数（claude/codex/N/A）
 - 构建/开发命令（build、lint、test、单测运行）
 - 高层架构（需要跨文件理解的核心设计）
 - 现有配置（README.md、.cursor/rules/、.cursorrules、.github/copilot-instructions.md 等）
+- 已有约束配置（`.editorconfig`、`eslint`/`prettier` 配置、构建脚本中的质量门禁，提取 1-2 条已有约束供初始宪章使用）
 - 技术栈
 
 分析结果用于生成 `{AGENT_FILE}` 的代码库文档部分，要求：
@@ -195,7 +201,7 @@ AGENT_SPECIFY   = specify --integration 参数（claude/codex/N/A）
 
 > 此步仅在选择了 Claude Code 或 Codex 时执行（`{AGENT_SPECIFY}` 为 `claude` 或 `codex`）。Copilot/Cursor 跳过。
 >
-> ⚡ **并行提示**：此步骤与 1.4（代码库分析）互不依赖，可并行执行。优先使用后台任务模式启动本步骤，在等待期间执行 1.3 的代码分析，最后等待本步骤完成。
+> ⚡ **并行提示**：此步骤与 1.4（代码库分析）互不依赖，可并行执行。优先使用后台任务模式启动本步骤，在等待期间执行 1.4 的代码分析，最后等待本步骤完成。
 
 **开始前告知用户**：正在安装 specify-cli、初始化 SDD 工作流并安装 Bug Extension，约需 1-2 分钟，请稍候。
 
@@ -230,6 +236,11 @@ echo "" | PYTHONIOENCODING=utf-8 specify init --here --integration {AGENT_SPECIF
 - `.specify/` — 配置和模板
 - `{AGENT_SKILL_DIR}/speckit-*/` — 所有 `/speckit-*` 斜杠命令
 - `.specify/extensions/bug/` — Bug 修复工作流（assess → fix → test）
+
+**版本兼容性检查**：`specify init` 成功后，执行 `specify --version` 获取版本号。与本 Skill 的已知兼容版本列表（见 `references/injection-texts.md` 锚点定义节）比对：
+
+- 版本匹配 → 正常继续
+- 版本不匹配 → 输出警告「spec-kit 版本 {当前版本} 可能与本 Skill 注入锚点不完全兼容，建议关注后续阶段的注入结果」，但**继续执行**（因为 spec-kit 的变更日志未知，无法预先断定不兼容）。注入阶段（3/4/5）的兼容性预检会进一步判断
 
 *speckit-git-* 清理\*：`specify init` 可能仍会生成 `speckit-git-*` 相关 skill（git commit/tag/rebase 等工作流扩展），这些命令不在本 Skill 核心流程范围内，执行清理：
 
@@ -289,28 +300,14 @@ Constitution 是 SDD 的最高准则。初始化时自动写入一份基本宪�
 
 ### 阶段 3-5 并行编排
 
-阶段 3（经验沉淀）、阶段 4（质量门禁）、阶段 5（Bug 修复）中有多个步骤互不依赖，按以下三波编排以缩短初始化时间。标注 `⚡` 的步骤可并行执行：
+阶段 3（经验沉淀）、阶段 4（质量门禁）、阶段 5（Bug 修复）中有多个步骤互不依赖。详细编排方案（含依赖图和每波说明）见 `references/parallel-orchestration.md`，以下为摘要：
 
-```
-第一波（文件创建并行）：
-  3.1 创建经验文件 → 3.2 安装 /retro（含 3.2.1）→ 4.1 安装 /speckit-quality
+- **第一波**：3.1 创建经验文件 ⚡ 3.2 安装 /retro ⚡ 4.1 安装 /speckit-quality（三个文件创建操作，互不依赖）
+- **第二波**：3.3 改造 specit-plan ⚡ 3.4 改造 specit-implement（修改不同文件，无冲突）
+- **第三波**：4.2 质量门禁注入 ⚡ 5.1 验证 Bug Extension（互不依赖），然后顺序执行 5.2 → 5.3
+- **收尾**：3.5 验证经验闭环 + 4.3 验证质量门禁
 
-第二波（speckit 注入并行）：
-  3.3 改造 /speckit-plan  ← 同时 →  3.4 改造 /speckit-implement
-  （修改不同文件，无冲突）
-
-第三波（质量门禁注入 || Bug Extension 验证）：
-  4.2 改造 /speckit-implement（质量门禁）  ← 同时 →  5.1 验证 Bug Extension
-  （4.2 依赖 3.4 的注入状态，5.1 依赖 1.4 的安装结果，两者之间无依赖）
-  → 然后顺序执行 5.2（依赖 5.1）→ 5.3
-
-收尾：
-  3.5 验证经验闭环 → 4.3 验证质量门禁
-```
-
-> 以上并行编排是执行建议，非硬性约束。模型可根据实际工具能力调整执行方式，串行执行不会导致失败或内容缺失，仅总耗时增加。
-
-> 以下各阶段详细步骤中，标注了 `⚡并行` 的步骤按上述编排执行，非标注步骤按原有顺序执行。
+> 并行编排是执行建议，非硬性约束。串行执行不会导致失败或内容缺失，仅总耗时增加。
 
 ### 阶段 3：经验沉淀机制初始化
 
@@ -360,6 +357,11 @@ cp -r assets/retro-references/ {AGENT_SKILL_DIR}/retro/references/
 
 > 仅在 `{AGENT_SKILL_DIR}/speckit-plan/SKILL.md` 存在时执行（Copilot/Cursor 无 speckit 命令，自动跳过）。
 
+**兼容性预检**：注入前先读取目标文件，对照 `references/injection-texts.md` 第 8.1 节中的锚点列表进行匹配：
+
+- 匹配率 ≥ 60%（≥3/5 个锚点命中）→ 正常执行以下正则匹配
+- 匹配率 < 60% → **警告用户**「speckit-plan 文件结构变化较大（锚点匹配率 {X}/5），注入已降级为文件末尾追加，请人工确认位置」→ 跳过正则匹配，直接使用第 1.2 节兜底追加文本
+
 读取 `{AGENT_SKILL_DIR}/speckit-plan/SKILL.md`。
 
 用语义正则定位到 "Load context" 相关步骤（匹配 `Load context`、`加载上下文` 或类似小节标题），在该步骤的读取列表中 `constitution.md` 之后追加一行。
@@ -375,6 +377,11 @@ cp -r assets/retro-references/ {AGENT_SKILL_DIR}/retro/references/
 > **设计意图**：在记忆最新鲜时捕捉经验——完成瞬间是复盘的最佳时机，而非事后再回忆。自动提示确保"做完一件事"和"留下经验"不会脱钩。
 
 > 仅在 `{AGENT_SKILL_DIR}/speckit-implement/SKILL.md` 存在时执行（Copilot/Cursor 无 speckit 命令，自动跳过）。
+
+**兼容性预检**：注入前先读取目标文件，对照 `references/injection-texts.md` 第 8.2 节中的两组锚点分别匹配：
+
+- 两组锚点各自的匹配率均 ≥ 50% → 正常执行以下正则匹配
+- 任一组匹配率 < 50% → **警告用户**「speckit-implement 文件结构变化较大，注入已降级为文件末尾追加，请人工确认位置」，跳过正则匹配，使用第 3.2 节兜底追加文本
 
 读取 `{AGENT_SKILL_DIR}/speckit-implement/SKILL.md`。
 
@@ -426,8 +433,13 @@ cp -r assets/retro-references/ {AGENT_SKILL_DIR}/retro/references/
 > 仅在 `{AGENT_SKILL_DIR}/speckit-implement/SKILL.md` 存在时执行（Copilot/Cursor 无 speckit 命令，自动跳过）。
 
 **前置检查**：确认阶段 3.4 的注入状态：
-- 如果阶段 3.4 走的是正则匹配成功路径（复盘提示步骤在正确位置）→ 正常执行 4.2 正则匹配，定位到复盘提示之前
+- 如果阶段 3.4 走的是正则匹配成功路径（复盘提示步骤在正确位置）→ 正常执行以下兼容性预检和正则匹配
 - 如果阶段 3.4 走的是兜底追加路径（文件末尾有 `<!-- ⚠ 自动追加，请人工确认位置是否正确 -->` 标记）→ 跳过正则匹配，直接在阶段 3.4 的兜底追加块之后追加质量门禁兜底内容，合并两个兜底块为一个整体
+
+**兼容性预检**（仅当 3.4 正则成功时执行）：对照 `references/injection-texts.md` 第 8.2 节中「Completion validation」组锚点匹配目标文件：
+
+- 匹配率 ≥ 50% → 正常执行以下正则匹配
+- 匹配率 < 50% → **警告用户**，跳过正则匹配，使用第 4.2 节兜底追加文本
 
 读取 `{AGENT_SKILL_DIR}/speckit-implement/SKILL.md`。
 
@@ -453,7 +465,7 @@ cp -r assets/retro-references/ {AGENT_SKILL_DIR}/retro/references/
 
 ### 阶段 5：Bug 修复工作流初始化
 
-> **设计意图**：Bug Extension（`/speckit.bug.assess → /speckit.bug.fix → /speckit.bug.test`）已在阶段 1.4 随 `specify init` 一同安装。本阶段负责验证安装完整性，并将缺陷修复流程接入本项目已有的经验库、质量门禁和复盘闭环。
+> **设计意图**：Bug Extension（`/speckit.bug.assess → /speckit.bug.fix → /speckit.bug.test`）已在阶段 1.5 随 `specify init` 一同安装。本阶段负责验证安装完整性，并将缺陷修复流程接入本项目已有的经验库、质量门禁和复盘闭环。
 
 > 此步仅在 `{AGENT_SPECIFY}` 有值时执行（Claude Code / Codex）。Copilot/Cursor 跳过。
 
@@ -470,7 +482,7 @@ cp -r assets/retro-references/ {AGENT_SKILL_DIR}/retro/references/
 - [ ] `.specify/extensions/bug/` 存在
 - [ ] `.specify/bugs/` 目录可写入
 
-验证通过后，设置 `BUG_EXTENSION_INSTALLED=true`；若验证失败，设置 `BUG_EXTENSION_INSTALLED=false` 并记录失败原因（如阶段 1.4 中 `specify extension add bug` 已失败，直接沿用其失败原因）。
+验证通过后，设置 `BUG_EXTENSION_INSTALLED=true`；若验证失败，设置 `BUG_EXTENSION_INSTALLED=false` 并记录失败原因（如阶段 1.5 中 `specify extension add bug` 已失败，直接沿用其失败原因）。
 
 #### 5.2 注入增强：连接经验库 + 质量门禁 + 复盘
 
@@ -484,6 +496,11 @@ Bug Extension 的三步流程本身已完整，在此之上接入本项目已有
 
 读取 `{AGENT_SKILL_DIR}/speckit-bug-assess/SKILL.md`（或 `speckit.bug.assess`，取决于实际安装路径）。
 
+**兼容性预检**：对照 `references/injection-texts.md` 第 8.3 节中的锚点列表匹配目标文件：
+
+- 匹配率 ≥ 60%（≥3/5 个锚点命中）→ 正常执行以下正则匹配
+- 匹配率 < 60% → **警告用户**「speckit-bug-assess 文件结构变化较大（锚点匹配率 {X}/5），注入已降级为文件末尾追加，请人工确认位置」→ 跳过正则匹配，使用第 5.2 节兜底追加文本
+
 用语义正则定位到评估步骤开始前（匹配 `Assess`、`评估`、`analyze the bug` 等模式），在上下文读取步骤中插入。
 
 读取 `references/injection-texts.md` 第 5 节获取注入文本和兜底追加文本。
@@ -495,6 +512,11 @@ Bug Extension 的三步流程本身已完整，在此之上接入本项目已有
 ##### 5.2.2 改造 `/speckit.bug.test`
 
 读取 `{AGENT_SKILL_DIR}/speckit-bug-test/SKILL.md`（或 `speckit.bug.test`）。
+
+**兼容性预检**：对照 `references/injection-texts.md` 第 8.4 节中的锚点列表匹配目标文件：
+
+- 匹配率 ≥ 60%（≥3/5 个锚点命中）→ 正常执行以下正则匹配
+- 匹配率 < 60% → **警告用户**「speckit-bug-test 文件结构变化较大（锚点匹配率 {X}/5），注入已降级为文件末尾追加，请人工确认位置」→ 跳过正则匹配，使用第 6.2 节兜底追加文本
 
 用语义正则定位到验证步骤完成后（匹配 `test complete`、`verification done`、`验证完成` 等模式），插入。
 
@@ -514,10 +536,10 @@ Bug Extension 的三步流程本身已完整，在此之上接入本项目已有
 
 按初始化操作顺序，逐一解释每个操作的作用和可选性，让用户理解 SDD 工作流的全貌。
 
-读取 `references/report-template.md` 获取完整汇报模板，按模板格式输出。需要替换的变量：
+读取 `references/report-template.md` 获取完整汇报模板。按模板中的「动态编号规则」，根据实际执行情况生成编号（跳过未执行的步骤，不留空位）。需要替换的变量：
 - `{AGENT_FILE}` / `{AGENT_NAME}` / `{AGENT_SKILL_DIR}` — 来自阶段 1.2
-- `{BUG_EXTENSION_INSTALLED}` — 来自阶段 5.1，若为 `false` 则替换第 ⑦ 项为失败原因和手动重试命令 `specify extension add bug --force`
-- 第 ⑧ 项（自动初始化基本宪章）：若 1.6 跳过（Copilot/Cursor 或已有宪章），将此项替换为「宪章已存在，跳过自动初始化」
+- `{BUG_EXTENSION_INSTALLED}` — 来自阶段 5.1，若为 `false` 则将 `[核心-Bug修复]` 项替换为失败原因和手动重试命令 `specify extension add bug --force`，并移除 `[可选-Bug重试]`
+- `[核心-宪章]`：若 1.6 跳过（Copilot/Cursor 或已有宪章），将此项替换为「宪章已存在，跳过自动初始化」
 
 > 以上说明已固化到 `{AGENT_FILE}` 的 SDD 章节中（含流程、命令清单、产出路径、经验沉淀），后续每次会话均可查阅。
 
@@ -530,6 +552,14 @@ Bug Extension 的三步流程本身已完整，在此之上接入本项目已有
 - 经验沉淀机制（/retro + lessons.md + speckit 改造）是初始化的一部分，不要跳过
 - 代码质量门禁（/speckit-quality + implement 质量检查）是初始化的一部分，不要跳过（仅 Claude Code / Codex 平台）
 - Bug 修复工作流（阶段 5）在 Claude Code / Codex 平台默认安装官方 Bug Extension；安装失败时必须报告原因和重试命令，不得静默跳过
-- **错误处理原则**：未特别说明的步骤，失败即终止并报告原因，不得静默继续。关键步骤的失败处理已在各阶段中单独标注
+- **错误处理原则**：未特别说明的步骤，失败即终止并报告原因，不得静默继续。关键步骤的失败处理已在各阶段中单独标注。本 Skill 采用三级错误处理策略：
+
+| 级别 | 定义 | 处理方式 | 典型场景 |
+|------|------|----------|----------|
+| **致命** | 核心 SDD 框架安装失败，后续阶段无法执行 | 终止并报告，引导用户检查环境 | `specify init` 失败 |
+| **可降级** | 增强组件安装失败，不影响核心 SDD 流程 | 记录失败原因，后续关联步骤跳过，最终汇报中展示 | `specify extension add bug` 失败 |
+| **可恢复** | 注入匹配失败，但可走兜底追加路径 | 执行兜底方案，明确告知用户需人工确认位置 | 正则匹配失败时追加到文件末尾 |
+
+> 各阶段步骤的失败级别在其描述中标注（如「失败即终止」= 致命，「失败记录原因，后续跳过」= 可降级，「走兜底追加」= 可恢复）
 - **回滚与恢复**：初始化中途失败时，读取 `references/rollback-guide.md` 按失败场景执行对应清理步骤
 
