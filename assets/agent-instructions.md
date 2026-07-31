@@ -170,10 +170,12 @@ specify preset add <name>         # 添加预设（如合规检查、敏捷流�
 ## 经验库优先（每次会话必读）
 
 在开始任何实质工作（写代码、改配置、规划方案）之前，**MUST** 先读一遍：
-- `.specify/memory/lessons.md` — 本项目踩过的坑和实战经验
-- `.specify/memory/constitution.md` — 项目原则（Constitution）
+- `.specify/memory/constitution.md` — 项目原则（Constitution），不可违反
+- `.specify/memory/lessons.idx` — 极轻量经验索引，扫描是否有与当前任务相关的关键词
+  - 有命中 → 读取 `lessons.md` 中对应的具体条目，在响应中显式引用（"参考 lessons.md 中 YYYY-MM-DD 条目..."），让用户知道经验被复用了
+  - 无命中 → 告知用户"经验库中暂无本任务相关记录"，继续后续工作
 
-如果 lessons.md 中有与当前任务相关的条目，应在响应中显式引用（"参考 lessons.md 中 YYYY-MM-DD 条目..."），让用户知道经验被复用了。
+> 两步读取的设计意图：`lessons.idx` 是极轻量索引（每行一条 `日期 · 关键词 · 简述`），先扫索引判断相关性，命中后才读 `lessons.md` 正文。避免经验积累后每次会话都读取完整的 `lessons.md`，节省上下文。
 
 ### 纠正即捕获
 
