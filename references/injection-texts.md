@@ -202,7 +202,7 @@ Bug Extension 适用于可快速定位和修复的缺陷。当满足以下任一
 用于定位「Load context」步骤的锚点：
 
 ```
-Load context, 加载上下文, load context, Load and analyze the implementation context, Load implementation context
+Load context, Load IMPL_PLAN, constitution.md, FEATURE_SPEC, Fill Constitution Check
 ```
 
 > 匹配率 = 命中的锚点数 / 总锚点数（5 个）。匹配率 ≥ 60%（3/5）时正常注入；< 60% 时走兜底。
@@ -212,13 +212,13 @@ Load context, 加载上下文, load context, Load and analyze the implementation
 用于定位「实现上下文读取」步骤的锚点：
 
 ```
-Load and analyze, implementation context, 加载实现上下文, Load implementation context, Read implementation context
+Load and analyze, implementation context, Read tasks.md, Read plan.md, Read data-model.md
 ```
 
 用于定位「Completion validation」步骤的锚点：
 
 ```
-Completion validation, 完成验证, Verify completion, Implementation complete, Final validation
+Completion validation, Verify all required tasks, Check that implemented features, Validate that tests pass, Confirm the implementation follows
 ```
 
 > 匹配率为两组锚点分别计算。任一组匹配率 < 50% 时，该改动走兜底。
@@ -228,7 +228,7 @@ Completion validation, 完成验证, Verify completion, Implementation complete,
 用于定位「评估步骤」的锚点：
 
 ```
-Assess, 评估, analyze the bug, Bug assessment, Assessment steps
+Assess merit, Locate the suspected, Propose a remediation, Write the assessment file, Assess
 ```
 
 > 匹配率 = 命中的锚点数 / 总锚点数（5 个）。匹配率 ≥ 60%（3/5）时正常注入。
@@ -238,11 +238,11 @@ Assess, 评估, analyze the bug, Bug assessment, Assessment steps
 用于定位「验证完成步骤」的锚点：
 
 ```
-test complete, verification done, 验证完成, Test complete, Verification steps
+Judge the outcome, Write the verification report, verification report, Mark the fix as, BUG_DIR/test.md
 ```
 
 > 匹配率 = 命中的锚点数 / 总锚点数（5 个）。匹配率 ≥ 60%（3/5）时正常注入。
 
 ### 8.5 已知兼容版本
 
-本 Skill 开发时 spec-kit 的兼容版本范围为 `>=0.0.22`。版本号通过阶段 1.5 的 `specify --version` 获取。
+本 Skill 开发时 spec-kit 的兼容版本范围为 `>=0.0.22`。锚点列表已于 v0.8.2 针对 `0.13.5` 模板措辞更新。版本号通过阶段 1.5 的 `specify --version` 获取。
