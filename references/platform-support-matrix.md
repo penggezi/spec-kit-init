@@ -55,6 +55,7 @@ Bug Extension 注入 (5.2)               ← 依赖：5.1 BUG_EXTENSION_INSTALLE
 | 缺失组件 | 需执行的步骤 | 前置条件检查 |
 |----------|-------------|-------------|
 | 无 `.specify/` | 执行阶段 1.5 → 1.6 → 2 | 无 |
+| 无 `.specify/sdd-workflow.md`（完整 SDD 文档缺失） | 执行阶段 2 的写入步骤（读取 `assets/sdd-workflow-doc.md` 写入） | `{AGENT_FILE}` 存在或即将创建 |
 | 无 retro skill | 执行 3.2 + 3.2.1 | 无 |
 | 无 speckit-quality skill | 执行 4.1 | 无 |
 | 无 lessons.md | 执行 3.1 | 无 |

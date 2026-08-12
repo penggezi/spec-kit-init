@@ -23,8 +23,8 @@
    → 创建 .specify/ 配置目录和所有 /speckit-* 斜杠命令
    → 这些命令是 SDD 流程的操作入口
 
-[核心-指令文件] 合并产出指令文件 ── 将 SDD 工作流说明写入 AI 指令文件
-   → 以后每次会话 AI 都会自动加载 SDD 上下文，知道该按什么流程走
+[核心-指令文件] 合并产出指令文件 ── 将 SDD 精简摘要写入 AI 指令文件，完整工作流说明写入 .specify/sdd-workflow.md
+   → 每次会话 AI 自动加载精简的 SDD 上下文（命令速查 + 指针），完整流程在开始 SDD 任务时按需读取
 
 [核心-经验沉淀] 经验沉淀机制初始化 ── 建立复盘闭环
    → 安装 /retro 命令 + 创建 lessons.md 经验库
@@ -74,7 +74,8 @@
   /speckit-taskstoissues  → 任务转 GitHub Issue
 
 ━━━━━━━━━━━━━━━━━━━━━━━━ 关键产出路径 ━━━━━━━━━━━━━━━━━━━━━━━━━
-  {AGENT_FILE}              ← AI 指令文件（含 SDD 工作流说明）
+  {AGENT_FILE}              ← AI 指令文件（含 SDD 精简摘要 + 指针）
+  .specify/sdd-workflow.md  ← 完整 SDD 工作流指南（SDD 任务时按需读取）
   .specify/memory/          ← Constitution + 经验库
   {AGENT_SKILL_DIR}/speckit-*/   ← SDD 命令
   {AGENT_SKILL_DIR}/retro/       ← 复盘命令
@@ -86,7 +87,7 @@
            → 下次会话 {AGENT_FILE} 强制读 lessons.md → 经验被自动参考
 ```
 
-> 以上说明已固化到 `{AGENT_FILE}` 的 SDD 章节中（含流程、命令清单、产出路径、经验沉淀），后续每次会话均可查阅。
+> 以上说明已固化到 `.specify/sdd-workflow.md`（完整工作流指南）与 `{AGENT_FILE}` 的 SDD 精简段落（命令速查 + 指针）中，后续每次会话均可查阅。
 
 ## 动态编号规则
 

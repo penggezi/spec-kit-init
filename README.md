@@ -85,8 +85,11 @@ spec-kit-init/
 │
 └── assets/
     ├── agent-instructions.md                  # 指令文件注入模板
-    │                                          #   第 1 节: SDD 段落（<!-- SDD:START/END -->）
+    │                                          #   第 1 节: 精简 SDD 段落（<!-- SDD:START/END -->，命令速查 + 指针）
     │                                          #   第 2 节: 经验库优先段落（注入文件顶部）
+    │                                          #   第 3 节: 完整 SDD 文档写入说明
+    ├── sdd-workflow-doc.md                    # 完整 SDD 工作流文档模板
+    │                                          #   写入目标项目 .specify/sdd-workflow.md（SDD 任务时按需读取）
     ├── lessons-skeleton.md                    # 经验文件骨架模板
     │                                          #   lessons.md + lessons-index.md 初始内容
     ├── retro-skill.md                         # /retro 复盘 Skill 完整定义
@@ -110,7 +113,8 @@ spec-kit-init/
 |------|------|-----------|
 | `SKILL.md` | **主入口**，定义 7 个阶段的完整流程（含幂等检查） | 每次会话必读 |
 | `scripts/ensure-specify.sh` | 在阶段 1.5 被调用，安装 specify-cli | 仅在 Claude Code / Codex 平台执行 |
-| `assets/agent-instructions.md` | 提供两个注入段落模板 | 阶段 2 按需读取 |
+| `assets/agent-instructions.md` | 提供注入段落模板（精简 SDD 段 + 经验库优先段 + 完整文档写入说明） | 阶段 2 按需读取 |
+| `assets/sdd-workflow-doc.md` | 完整 SDD 工作流文档模板，写入目标项目 `.specify/sdd-workflow.md` | 阶段 2 按需读取 |
 | `references/report-template.md` | 阶段 6 汇报模板，初始化完成后展示的汇总信息 | 阶段 6 按需读取 |
 | `references/parallel-orchestration.md` | 阶段 3-5 并行编排方案（依赖图 + 每波说明） | 阶段 3-5 执行时按需读取 |
 | `references/platform-support-matrix.md` | 四平台功能支持矩阵 + 组件依赖矩阵 + 补齐决策表 | 阶段 0.3 按需读取 |
@@ -145,11 +149,15 @@ spec-kit-init/
 
 ### 阶段 2：合并产出指令文件
 
-将 SDD 段落和「经验库优先」段注入目标项目的 AI 指令文件（`{AGENT_FILE}`）：
+产出两份文件：
 
-- **经验库优先段**：注入到标题行之后、第一个 `##` 节之前，确保 AI 每次会话先读经验库
-- **SDD 段落**：用 `<!-- SDD:START -->` / `<!-- SDD:END -->` 标记包裹，包含完整的工作流说明
-- 智能合并：已有标记 → 替换内容；无标记 → 末尾追加；无文件 → 新建
+- **`{AGENT_FILE}`**：注入「经验库优先」段 + **精简** SDD 段落
+  - **经验库优先段**：注入到标题行之后、第一个 `##` 节之前，确保 AI 每次会话先读经验库
+  - **精简 SDD 段落**：用 `<!-- SDD:START -->` / `<!-- SDD:END -->` 标记包裹，只含命令速查表 + `.specify/sdd-workflow.md` 指针
+  - 智能合并：已有标记 → 替换内容；无标记 → 末尾追加；无文件 → 新建
+- **`.specify/sdd-workflow.md`**：完整 SDD 工作流文档（写入 `assets/sdd-workflow-doc.md` 内容），SDD 任务时按需读取
+
+> **设计意图（渐进式加载）**：`{AGENT_FILE}` 每次会话都加载，只放精简摘要；完整流程放在 `.specify/sdd-workflow.md`，非 SDD 任务不加载完整文档。旧版已把完整 SDD 段注入指令文件的项目由阶段 0.5 自动迁移。
 
 ### 阶段 3：经验沉淀机制初始化
 
@@ -221,7 +229,7 @@ Bug Extension 已在阶段 1.5 随 `specify init` 一同安装，此阶段负责
 
 ### 阶段 6：汇报
 
-按初始化操作顺序，逐一解释每个环节的用途（核心操作 vs 可选操作），展示可用命令清单和关键产出路径。Bug Extension 自动安装成功时，汇报额外包含 Bug 修复命令与产物路径；安装失败时，汇报失败原因和手动重试命令。汇报内容已固化到 `{AGENT_FILE}` 的 SDD 章节中，后续每次会话均可查阅。
+按初始化操作顺序，逐一解释每个环节的用途（核心操作 vs 可选操作），展示可用命令清单和关键产出路径。Bug Extension 自动安装成功时，汇报额外包含 Bug 修复命令与产物路径；安装失败时，汇报失败原因和手动重试命令。汇报内容已固化到 `.specify/sdd-workflow.md`（完整工作流指南）与 `{AGENT_FILE}` 的 SDD 精简段落（命令速查 + 指针）中，后续每次会话均可查阅。
 
 ---
 
@@ -230,6 +238,8 @@ Bug Extension 已在阶段 1.5 随 `specify init` 一同安装，此阶段负责
 ### 渐进式加载
 
 SKILL.md 本身包含全部流程描述，`references/` 和 `assets/` 下的文件**按需读取**，仅在执行对应阶段时才加载，避免提前占用上下文。SKILL.md 中的表格明确标注了每个文件在何种场景下读取。
+
+该原则同样应用于**初始化产出物**：`{AGENT_FILE}` 每次会话都加载，只保留精简 SDD 摘要（命令速查表 + 指针）；完整工作流说明写入 `.specify/sdd-workflow.md`，仅在开始 SDD 任务时读取——避免非 SDD 任务的每次会话都加载完整 SDD 文档，节省时间和 token。
 
 ### 非交互式终端兼容
 

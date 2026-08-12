@@ -30,7 +30,8 @@
 |------|------|
 | `SKILL.md` | **主入口**。定义 7 个阶段（幂等检查 → 环境检测 → SDD 安装 → 经验沉淀 → **质量门禁** → **Bug 修复工作流** → 汇报），是全部逻辑的载体 |
 | `scripts/ensure-specify.sh` | bash 脚本，检测并安装 `specify-cli`（带网络重试和超时保护） |
-| `assets/agent-instructions.md` | SDD 段落模板 + 经验库优先段模板，注入到目标项目的 AI 指令文件中 |
+| `assets/agent-instructions.md` | 注入模板：精简 SDD 段落（命令速查 + 指针）+ 经验库优先段 + 完整文档写入说明 |
+| `assets/sdd-workflow-doc.md` | 完整 SDD 工作流文档模板，阶段 2 写入目标项目的 `.specify/sdd-workflow.md` |
 | `references/report-template.md` | 阶段 6 汇报模板，初始化完成后展示的汇总信息 |
 | `assets/retro-skill.md` | `/retro` 复盘 Skill 的完整定义模板，含 3 种模式 + 5 层经验质量筛选 + 双角色对抗审查 + 去重机制 |
 | `assets/retro-references/mechanism-auditor.md` | 机制审计员审查 prompt 模板（判断经验是否揭示根因机制） |
@@ -79,6 +80,7 @@
 
 - **非交互式终端兼容**：`specify init` 在 CI/agent 环境中会永久阻塞，需通过 `echo "" |` 管道发送空行让交互步骤使用默认选项
 - **渐进式加载**：SKILL.md 本身包含全部流程描述，`references/` 和 `assets/` 下的文件按需读取，避免提前占用上下文
+- **SDD 段落渐进式加载（初始化产物）**：`{AGENT_FILE}` 每次会话都加载，只注入精简 SDD 段（命令速查表 + `.specify/sdd-workflow.md` 指针）；完整工作流说明写入 `.specify/sdd-workflow.md`，仅在开始 SDD 任务时读取。旧版已把完整 SDD 段注入指令文件的项目由阶段 0.5 自动迁移抽取
 - **回滚与恢复**：每个阶段都明确了失败时的清理方式（见 SKILL.md 末尾"约束"章节）
 - **物理隔离的轻量去重索引**：`lessons-index.md` 与 `lessons.md` 分离，去重时先读索引（O(n) 恒定成本），命中后才读正文精确比对，避免扫描成本随经验积累膨胀
 - **双角色对抗审查**：每条经验经 mechanism-auditor（审查是否揭示根因机制）和 routing-auditor（审查归入 constitution 还是 lessons）独立审查，两个角色都通过才放行

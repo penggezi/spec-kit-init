@@ -8,7 +8,8 @@
 
 | 失败场景 | 回滚方式 |
 |----------|----------|
-| `specify init` 已完成但后续步骤失败 | `.specify/` 目录已创建，保留不变；`{AGENT_FILE}` 中若已注入 `<!-- SDD:...-->` 标记，手动删除标记段即可恢复 |
+| `specify init` 已完成但后续步骤失败 | `.specify/` 目录已创建，保留不变；`{AGENT_FILE}` 中若已注入 `<!-- SDD:...-->` 标记，手动删除标记段即可恢复；若已写入 `.specify/sdd-workflow.md`，一并删除该文件 |
+| 阶段 0.5 迁移中途失败（已抽取 `.specify/sdd-workflow.md` 但未替换精简段） | 删除 `.specify/sdd-workflow.md`，`{AGENT_FILE}` 中的完整 SDD 段保持不变 |
 | `specify init` 本身失败 | 没有任何文件变更，无需回滚 |
 | 经验沉淀步骤（阶段 3）已修改 `/speckit-plan` 或 `/speckit-implement` 但后续失败 | 在对应文件的 `<!-- ⚠ 自动追加...-->` 标记处删除注入内容即可恢复 |
 | 质量门禁步骤（阶段 4）已修改 `/speckit-implement` 但后续失败 | 在对应文件的 `<!-- ⚠ 自动追加...-->` 标记处删除质量门禁注入内容即可恢复 |
@@ -20,4 +21,5 @@
 rm -rf .specify/ {AGENT_SKILL_DIR}/speckit-* {AGENT_SKILL_DIR}/retro {AGENT_SKILL_DIR}/speckit-quality
 specify extension remove bug
 # 从 {AGENT_FILE} 中移除 <!-- SDD:START --> 至 <!-- SDD:END --> 段
+# （.specify/sdd-workflow.md 已随 rm -rf .specify/ 一并删除）
 ```

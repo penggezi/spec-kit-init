@@ -36,6 +36,7 @@ description: |
 | 场景 | 文件 |
 |------|------|
 | 获取指令文件注入模板 | `assets/agent-instructions.md` |
+| 获取完整 SDD 工作流文档模板（写入 `.specify/sdd-workflow.md`） | `assets/sdd-workflow-doc.md` |
 | 获取注入文本和兜底追加文本 | `references/injection-texts.md` |
 | 获取经验文件骨架模板 | `assets/lessons-skeleton.md` |
 | 获取初始化失败回滚步骤 | `references/rollback-guide.md` |
@@ -75,6 +76,8 @@ SDD（规格驱动开发）翻转传统开发流程：**规格是核心产出物
 3. 检查 `{AGENT_SKILL_DIR}/retro/SKILL.md` 是否存在
 4. 检查 `{AGENT_SKILL_DIR}/speckit-quality/SKILL.md` 是否存在
 5. 检查 `.specify/extensions/bug/` 目录是否存在
+6. 检查 `.specify/sdd-workflow.md` 是否存在
+7. 检查 `{AGENT_FILE}` 中 SDD 段是否为精简版（特征：含 `.specify/sdd-workflow.md` 指针；完整版特征：含 `## 基础命令` 等二级标题但无指针）
 
 #### 0.2 判断逻辑
 
@@ -82,6 +85,7 @@ SDD（规格驱动开发）翻转传统开发流程：**规格是核心产出物
 |----------|----------|
 | 全部不存在 | 全新项目，完整执行阶段 1-6 |
 | 部分存在（如只有 `.specify/` 但无 retro） | 告知用户当前状态，列出已完成和缺失的组件，询问：「检测到项目已部分初始化，是否仅补齐缺失组件？」 |
+| `{AGENT_FILE}` 有 `<!-- SDD:START -->` 标记且 SDD 段为完整版（无 `.specify/sdd-workflow.md` 指针）+ `.specify/sdd-workflow.md` 不存在 | 自动迁移（阶段 0.5）：抽取完整 SDD 段到 `.specify/sdd-workflow.md`，替换为精简版。迁移完成后按其余检查项继续判断 |
 | 全部存在 | 告知用户项目已完成初始化，询问：「项目已完成初始化。是否强制重新初始化？（这会覆盖已有配置）」 |
 
 #### 0.3 用户选择"补齐缺失组件"
@@ -97,6 +101,26 @@ SDD（规格驱动开发）翻转传统开发流程：**规格是核心产出物
 #### 0.4 用户选择"强制重新初始化"
 
 先展示将被覆盖/修改的文件清单，用户确认后完整执行阶段 1-6。
+
+#### 0.5 自动迁移旧式完整 SDD 段
+
+> **设计意图**：旧版初始化把完整 SDD 工作流说明（~150 行）直接注入 `{AGENT_FILE}`，导致非 SDD 任务的每次会话都加载完整文档。本步骤将旧式完整 SDD 段抽取到 `.specify/sdd-workflow.md`，并把 `{AGENT_FILE}` 中的段落替换为精简版（命令速查表 + 指针），一次补齐存量项目。
+
+**触发条件**：`{AGENT_FILE}` 有 `<!-- SDD:START -->` 标记且 SDD 段为完整版（不含 `.specify/sdd-workflow.md` 指针，含 `## 基础命令` 等二级标题）+ `.specify/sdd-workflow.md` 不存在。
+
+**执行步骤**：
+
+1. 读取 `{AGENT_FILE}` 中 `<!-- SDD:START -->` 与 `<!-- SDD:END -->` 之间的完整内容
+2. 将该内容写入 `.specify/sdd-workflow.md`：
+   - 去掉 `<!-- SDD:START -->` / `<!-- SDD:END -->` 标记行
+   - 首行标题改为 `# SDD 工作流指南（完整版）`，并在标题下补一行 `> 本文件由 spec-kit-init 从 {AGENT_FILE} 迁移生成，是 SDD 完整工作流说明。`
+   - 其余内容原样保留（其中的 `{AGENT_FILE}` 等占位符已被此前注入替换为实际值）
+3. 将 `{AGENT_FILE}` 中的 SDD 段整体替换为精简版（`assets/agent-instructions.md` 第 1 节内容）
+4. 告知用户：「已将 {AGENT_FILE} 中的完整 SDD 说明迁移到 `.specify/sdd-workflow.md`，{AGENT_FILE} 已替换为精简摘要（命令速查 + 指针），非 SDD 任务不再加载完整 SDD 文档。」
+
+**边界处理**：
+- `.specify/sdd-workflow.md` 已存在且非空 → 跳过抽取，仅将 `{AGENT_FILE}` 的 SDD 段替换为精简版（避免覆盖用户已有内容）
+- `{AGENT_FILE}` 中无 SDD 标记但 `.specify/sdd-workflow.md` 缺失 → 归入阶段 0.3 补齐流程，执行阶段 2 的写入步骤
 
 ### 阶段 1：分析 + 初始化
 
@@ -284,19 +308,23 @@ Constitution 是 SDD 的最高准则。初始化时自动写入一份基本宪�
 
 ### 阶段 2：合并产出指令文件
 
-读取 `assets/agent-instructions.md` 获取注入模板。目标文件为阶段 1.2 选定的 `{AGENT_FILE}`。
+读取 `assets/agent-instructions.md` 获取注入模板。目标文件为阶段 1.2 选定的 `{AGENT_FILE}`。本阶段产出两份文件：
 
-合并规则：
+1. **`{AGENT_FILE}`** — 注入「经验库优先」段 + **精简** SDD 段落（命令速查表 + `.specify/sdd-workflow.md` 指针）
+2. **`.specify/sdd-workflow.md`** — 完整 SDD 工作流文档（读取 `assets/sdd-workflow-doc.md`，替换其中的 `{AGENT_FILE}` / `{AGENT_NAME}` / `{AGENT_SKILL_DIR}` 变量后写入；已存在且非空则跳过，不覆盖）
+
+`{AGENT_FILE}` 的合并规则：
 
 - 有 `<!-- SDD:START -->` 标记 → 只替换标记间内容，保留其余
-- 无标记，有文件 → 末尾追加标记包裹的 SDD 段落
-- 无文件 → 新建（代码库文档 + 经验库优先段 + SDD 段）
+- 无标记，有文件 → 末尾追加标记包裹的精简 SDD 段落
+- 无文件 → 新建（代码库文档 + 经验库优先段 + 精简 SDD 段）
 
 关键点：
 
 - **必须在** **`{AGENT_FILE}`** **顶部注入「经验库优先」段**：在 `{AGENT_TITLE}` 标题行之后、第一个 `##` 节之前，插入模板第 2 节内容
-- SDD 段落使用模板第 1 节内容
-- 确保 SDD 段中包含 `/retro` 行和「经验沉淀（Retro）」章节
+- 精简 SDD 段落使用模板第 1 节内容（只含命令速查表 + 指针，**不**含完整命令说明）
+- 完整工作流文档写入 `.specify/sdd-workflow.md`（读取 `assets/sdd-workflow-doc.md`），确保包含 `/retro` 行和「经验沉淀（Retro）」章节
+- 写入后确认两份文件均存在且非空
 
 ### 阶段 3-5 并行编排
 
@@ -405,6 +433,7 @@ cp -r assets/retro-references/ {AGENT_SKILL_DIR}/retro/references/
 - [ ] `{AGENT_SKILL_DIR}/retro/references/mechanism-auditor.md` 存在
 - [ ] `{AGENT_SKILL_DIR}/retro/references/routing-auditor.md` 存在
 - [ ] `.specify/memory/lessons.md` 存在
+- [ ] `.specify/sdd-workflow.md` 存在且非空（精简 SDD 段引用的完整工作流文档）
 - [ ] `{AGENT_FILE}` 顶部有「经验库优先」段（含纠正即捕获指令）
 - [ ] `/speckit-plan` 读到 lessons.md
 - [ ] `/speckit-implement` 读到 lessons.md + 完成后询问复盘
@@ -541,7 +570,7 @@ Bug Extension 的三步流程本身已完整，在此之上接入本项目已有
 - `{BUG_EXTENSION_INSTALLED}` — 来自阶段 5.1，若为 `false` 则将 `[核心-Bug修复]` 项替换为失败原因和手动重试命令 `specify extension add bug --force`，并移除 `[可选-Bug重试]`
 - `[核心-宪章]`：若 1.6 跳过（Copilot/Cursor 或已有宪章），将此项替换为「宪章已存在，跳过自动初始化」
 
-> 以上说明已固化到 `{AGENT_FILE}` 的 SDD 章节中（含流程、命令清单、产出路径、经验沉淀），后续每次会话均可查阅。
+> 以上说明已固化到 `.specify/sdd-workflow.md`（完整工作流指南）与 `{AGENT_FILE}` 的 SDD 精简段落（命令速查 + 指针）中，后续每次会话均可查阅。
 
 ## 约束
 
