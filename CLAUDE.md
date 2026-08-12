@@ -37,12 +37,18 @@
 | `assets/retro-references/mechanism-auditor.md` | 机制审计员审查 prompt 模板（判断经验是否揭示根因机制） |
 | `assets/retro-references/routing-auditor.md` | 路由审核员审查 prompt 模板（判断经验归入 constitution.md 还是 lessons.md） |
 | `assets/quality-gate-skill.md` | `/speckit-quality` 质量门禁命令的完整定义模板，含 Git 变更检测、直接影响推导、文件/模块/全量范围升级、技术栈工具映射和结果归因 |
+| `references/injection-texts.md` | 注入文本片段仓库。第 8 节注入兼容性锚点；第 9 节 `SPEC-KIT-INIT` 注入标记注册表 + `.specify/config.yml` 记录 Schema（阶段 0 交叉验证依据） |
+| `references/parallel-orchestration.md` | 阶段 3-5 并行编排方案（依赖图 + 每波说明） |
+| `references/platform-support-matrix.md` | 平台支持矩阵 + 组件依赖矩阵 + 补齐场景决策表（补齐/升级/重建模式执行顺序） |
+| `references/rollback-guide.md` | 事务式回滚指南：备份清单 + 精确回滚，禁止无条件 `rm -rf` |
+| `assets/lessons-skeleton.md` | 经验文件骨架模板（lessons.md + lessons-index.md 初始内容） |
 
 ### SKILL.md 的 7 个阶段
 
 ```
 阶段 0：初始化前检查（幂等性）
-  └── 0.1-0.4 检测已有初始化状态，支持补齐缺失组件或强制重新初始化
+  └── 0.1-0.4 分级检查（基础结构 / 增强资产 / 注入完整性）+ 配置记录与 SPEC-KIT-INIT 标记交叉验证，
+      支持三种模式：补齐（repair）/ 升级（upgrade）/ 重建（reset）
 
 阶段 1：分析 + 初始化
   ├── 1.1 环境检测（Python 3.11+、uv、Git）

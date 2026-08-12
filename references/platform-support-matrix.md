@@ -12,9 +12,11 @@
 | **经验沉淀机制**（`/retro` + `lessons.md`） | ✅ 完整 | ✅ 完整 | ⚠️ 部分¹ | ⚠️ 部分¹ |
 | **Constitution 管理** | ✅ 完整 | ✅ 完整 | ❌ 不支持 | ❌ 不支持 |
 
-> ¹ Copilot/Cursor 不支持 `/retro` skill 的斜杠命令调用，但 `lessons.md` 是纯 Markdown 文件，可手动参考。经验沉淀机制的核心价值（经验文件 + 纠正即捕获指令）不受平台影响。
+> ¹ Copilot/Cursor 不支持 `/retro` skill 的斜杠命令调用。经验沉淀机制在这些平台上**只保留「经验文件读取 + 纠正即捕获 + 自然语言复盘」能力**：`lessons.md` 是纯 Markdown 文件，与平台无关；指令注入段中涉及「调用 /retro」的表述替换为「按项目指令文件中的复盘流程执行」。不应宣称 `/retro` 或 `/speckit-*` 命令在这些平台可调用。
 
 **skill 安装目录**：Copilot/Cursor 自身无标准 skill 系统。安装时 retro skill 写入 `.claude/skills/retro/` 作为统一回退目录。
+
+**Cursor 指令文件**：`AGENT_FILE` 为具体文件 `.cursor/rules/spec-kit-init.mdc`（带 frontmatter：`description` + `alwaysApply: true`），而非 `.cursor/rules/` 目录。写入时不修改用户已有其他规则文件；项目只有旧版 `.cursorrules` 时新建 `.mdc`，不覆盖旧文件。
 
 ---
 
@@ -55,14 +57,17 @@ Bug Extension 注入 (5.2)               ← 依赖：5.1 BUG_EXTENSION_INSTALLE
 | 缺失组件 | 需执行的步骤 | 前置条件检查 |
 |----------|-------------|-------------|
 | 无 `.specify/` | 执行阶段 1.5 → 1.6 → 2 | 无 |
-| 无 `.specify/sdd-workflow.md`（完整 SDD 文档缺失） | 执行阶段 2 的写入步骤（读取 `assets/sdd-workflow-doc.md` 写入） | `{AGENT_FILE}` 存在或即将创建 |
+| 无 `.specify/sdd-workflow.md`（完整 SDD 文档缺失） | 执行阶段 2 的写入步骤（读取 `{SKILL_ROOT}/assets/sdd-workflow-doc.md` 写入） | `{AGENT_FILE}` 存在或即将创建 |
 | 无 retro skill | 执行 3.2 + 3.2.1 | 无 |
 | 无 speckit-quality skill | 执行 4.1 | 无 |
-| 无 lessons.md | 执行 3.1 | 无 |
-| speckit-plan 有但未注入 lessons | 执行 3.3 | speckit-plan SKILL.md 存在 |
-| speckit-implement 有但未注入（经验）| 执行 3.4 | speckit-implement SKILL.md 存在 |
-| speckit-implement 有但未注入（质量）| 执行 4.2 | 3.4 注入状态已知 |
+| 无 lessons.md / 无 lessons-index.md | 执行 3.1（逐文件处理；仅索引缺失时从正文重建，不覆盖正文） | 无 |
+| speckit-plan 有但未注入 lessons（无 `SPEC-KIT-INIT:PLAN-LESSONS` 标记） | 执行 3.3 | speckit-plan SKILL.md 存在 |
+| speckit-implement 有但未注入（经验，无 `IMPLEMENT-LESSONS`/`IMPLEMENT-RETRO` 标记）| 执行 3.4 | speckit-implement SKILL.md 存在 |
+| speckit-implement 有但未注入（质量，无 `IMPLEMENT-QUALITY` 标记）| 执行 4.2 | 3.4 注入状态已知 |
 | speckit-implement 缺少两项注入 | 先 3.4 → 后 4.2 | 顺序依赖 |
+| 配置有记录但实际无标记（注入被 spec-kit 升级覆盖） | 仅重新注入对应项（3.3/3.4/4.2/5.2.x） | 对应文件存在 |
 | spec-kit 有但 Bug Extension 缺失 | 执行 1.5 的 ext add → 5.1 → 5.2 | `{AGENT_SPECIFY}` 有值 |
 
 > 当多个缺失组件之间无依赖时（如同时缺少 retro + quality skill），可并行补齐。
+>
+> 三种运行模式：**补齐（repair）**＝只补缺失、恢复被覆盖注入，不动用户已有内容；**升级（upgrade）**＝把托管且未被用户修改的 retro/quality 更新到当前模板；**重建（reset）**＝展示覆盖清单并确认后重建托管内容。默认推荐 repair，检测到模板版本落后时推荐 upgrade。

@@ -8,16 +8,19 @@
 
 ### 1.1 正则匹配成功时插入
 
-```
+````
+<!-- SPEC-KIT-INIT:PLAN-LESSONS:START -->
    - **MUST** also read `.specify/memory/lessons.md`（项目级实战经验，如有相关条目须在方案中显式引用）：
      1. 先读取 `.specify/memory/lessons-index.md`，扫描是否有与当前功能相关的关键词
      2. 有命中 → 读取 `lessons.md` 中对应的具体条目，在方案中显式引用
      3. 无命中 → 告知用户"lessons.md 中暂无本功能相关经验"，继续后续步骤
-```
+<!-- SPEC-KIT-INIT:PLAN-LESSONS:END -->
+````
 
 ### 1.2 兜底追加
 
-```
+````
+<!-- SPEC-KIT-INIT:PLAN-LESSONS:START -->
 <!-- ⚠ 自动追加，请人工确认位置是否正确 -->
 ## ⚠ 经验库注入（由 spec-kit-init 追加）
 
@@ -25,7 +28,8 @@
 1. 先读取 `.specify/memory/lessons-index.md`（极轻量索引），扫描是否有与当前功能相关的关键词
 2. 有命中 → 读取 `lessons.md` 中对应的具体条目，在方案中显式引用
 3. 无命中 → 告知用户"暂无相关经验"，继续后续步骤
-```
+<!-- SPEC-KIT-INIT:PLAN-LESSONS:END -->
+````
 
 ---
 
@@ -33,11 +37,13 @@
 
 ### 2.1 正则匹配成功时插入
 
-```
+````
+<!-- SPEC-KIT-INIT:IMPLEMENT-LESSONS:START -->
    - **必须** 读取 `.specify/memory/lessons-index.md`（极轻量索引），扫描是否有与当前实现相关的关键词：
      1. 有命中 → 读取 `lessons.md` 中对应的具体条目，在实现中遵循
      2. 无命中 → 继续后续步骤，无需读取完整 `lessons.md`
-```
+<!-- SPEC-KIT-INIT:IMPLEMENT-LESSONS:END -->
+````
 
 ---
 
@@ -46,6 +52,7 @@
 ### 3.1 正则匹配成功时插入
 
 ````
+<!-- SPEC-KIT-INIT:IMPLEMENT-RETRO:START -->
 10. **经验沉淀提示（Retrospective Prompt）**：
 
     实施全部完成、状态汇报输出之后，**主动询问用户是否进行复盘**，让本次实现中的踩坑、决策、验证结果有机会沉淀为长期资产。
@@ -63,11 +70,14 @@
     - **可以跳过**：纯模板化代码、无新认知、用户已表达"不想复盘"
 
     用户回应"是"/"复盘"/"yes" → 调用 `/retro` skill 继续；用户选择跳过则正常结束。
+<!-- SPEC-KIT-INIT:IMPLEMENT-RETRO:END -->
 ````
 
 ### 3.2 兜底追加
 
-```
+````
+<!-- SPEC-KIT-INIT:IMPLEMENT-LESSONS:START -->
+<!-- SPEC-KIT-INIT:IMPLEMENT-RETRO:START -->
 <!-- ⚠ 自动追加，请人工确认位置是否正确 -->
 ## ⚠ 经验库注入（由 spec-kit-init 追加）
 
@@ -76,7 +86,9 @@
    - 有命中 → 读取 `lessons.md` 中对应的具体条目
    - 无命中 → 继续后续步骤
 2. 实现完成后，**主动询问用户**是否执行 `/retro` 复盘。
-```
+<!-- SPEC-KIT-INIT:IMPLEMENT-LESSONS:END -->
+<!-- SPEC-KIT-INIT:IMPLEMENT-RETRO:END -->
+````
 
 ---
 
@@ -84,7 +96,8 @@
 
 ### 4.1 正则匹配成功时插入
 
-```
+````
+<!-- SPEC-KIT-INIT:IMPLEMENT-QUALITY:START -->
 N. **代码质量门禁（Code Quality Gate）**：
 
     在全部实现任务标记完成之后、复盘提示之前，调用 `/speckit-quality` 执行统一质量门禁。
@@ -104,16 +117,19 @@ N. **代码质量门禁（Code Quality Gate）**：
     e. **跳过条件**：用户可明确说"跳过质量检查"；连续 3 次阻塞且用户均选择不修复时不再重复提示。
 
     f. **与复盘联动**：将重复警告、存量模式、范围升级或降级原因传递给复盘步骤。范围规则和技术栈命令均以 `/speckit-quality` 自身定义为准，不在本命令中维护第二套映射表。
-```
+<!-- SPEC-KIT-INIT:IMPLEMENT-QUALITY:END -->
+````
 
 ### 4.2 兜底追加
 
-```
+````
+<!-- SPEC-KIT-INIT:IMPLEMENT-QUALITY:START -->
 <!-- ⚠ 自动追加，请人工确认位置是否正确 -->
 ## ⚠ 质量门禁注入（由 spec-kit-init 追加）
 
 在全部实现任务标记完成之后、复盘提示之前，新增「代码质量门禁」步骤：调用 `/speckit-quality`，默认检查 Git 变更文件和有证据的直接影响范围；风险或范围不确定时升级模块/全量；区分本次变更、关联存量和无法归因的问题。
-```
+<!-- SPEC-KIT-INIT:IMPLEMENT-QUALITY:END -->
+````
 
 ---
 
@@ -121,16 +137,19 @@ N. **代码质量门禁（Code Quality Gate）**：
 
 ### 5.1 正则匹配成功时插入
 
-```
+````
+<!-- SPEC-KIT-INIT:BUG-ASSESS-LESSONS:START -->
 - **必须** 读取项目经验库：
   1. 先读取 `.specify/memory/lessons-index.md`，扫描是否有与当前缺陷相关的关键词（同类缺陷、已知根因模式）
   2. 有命中 → 读取 `lessons.md` 中对应的具体条目，在评估中显式引用
   3. 无命中 → 告知用户"经验库中暂无本缺陷相关记录"，继续评估
-```
+<!-- SPEC-KIT-INIT:BUG-ASSESS-LESSONS:END -->
+````
 
 ### 5.2 兜底追加
 
-```
+````
+<!-- SPEC-KIT-INIT:BUG-ASSESS-LESSONS:START -->
 <!-- ⚠ 自动追加，请人工确认位置是否正确 -->
 ## ⚠ 经验库注入（由 spec-kit-init 追加）
 
@@ -138,7 +157,8 @@ N. **代码质量门禁（Code Quality Gate）**：
 1. 先读取 `.specify/memory/lessons-index.md`，扫描是否有与当前缺陷相关的关键词
 2. 有命中 → 读取 `lessons.md` 中对应的具体条目，在评估中引用
 3. 无命中 → 继续评估
-```
+<!-- SPEC-KIT-INIT:BUG-ASSESS-LESSONS:END -->
+````
 
 ---
 
@@ -146,7 +166,8 @@ N. **代码质量门禁（Code Quality Gate）**：
 
 ### 6.1 正则匹配成功时插入
 
-```
+````
+<!-- SPEC-KIT-INIT:BUG-TEST-QUALITY-RETRO:START -->
 N. **质量门禁与复盘联动**：
 
     a. 调用 `/speckit-quality` 执行代码质量门禁（默认范围：Git 变更），确保修复通过静态检查。
@@ -155,17 +176,20 @@ N. **质量门禁与复盘联动**：
        - 同类型反复出现的缺陷（lessons.md 中已有相关条目）
        - 修复过程中发现的非显然根因或陷阱
        → 满足任一条件时，主动询问用户是否执行 `/retro`。
-```
+<!-- SPEC-KIT-INIT:BUG-TEST-QUALITY-RETRO:END -->
+````
 
 ### 6.2 兜底追加
 
-```
+````
+<!-- SPEC-KIT-INIT:BUG-TEST-QUALITY-RETRO:START -->
 <!-- ⚠ 自动追加，请人工确认位置是否正确 -->
 ## ⚠ 质量门禁与复盘联动（由 spec-kit-init 追加）
 
 1. 验证完成后，调用 `/speckit-quality` 执行代码质量门禁，确保修复通过静态检查。
 2. 对于 L2/L3 升级缺陷或同类型反复出现的缺陷，主动询问用户是否执行 `/retro`。
-```
+<!-- SPEC-KIT-INIT:BUG-TEST-QUALITY-RETRO:END -->
+````
 
 ---
 
@@ -246,3 +270,118 @@ Judge the outcome, Write the verification report, verification report, Mark the 
 ### 8.5 已知兼容版本
 
 本 Skill 开发时 spec-kit 的兼容版本范围为 `>=0.0.22`。锚点列表已于 v0.8.2 针对 `0.13.5` 模板措辞更新。版本号通过阶段 1.5 的 `specify --version` 获取。
+
+> **版本判断以注入锚点检测为最终依据**，`specify --version` 仅作参考提示：版本落在已验证范围之外的，只在阶段 1.5 输出警告，不阻断流程；注入阶段的锚点匹配率才是实际兼容性的判定标准。
+
+---
+
+## 9. 托管注入标记与配置记录 Schema
+
+以下约定供阶段 0 幂等检查、阶段 3-5 注入、回滚恢复共同使用。
+
+### 9.1 注入标记注册表
+
+每处注入内容（无论正则匹配成功还是兜底追加）必须以 `SPEC-KIT-INIT` 标记包裹，标记名不可更改。阶段 0 通过标记判断注入是否存在，回滚通过标记删除注入。
+
+| 标记 | 注入对象 | 阶段 |
+|------|----------|------|
+| `<!-- SPEC-KIT-INIT:PLAN-LESSONS:START/END -->` | `/speckit-plan` 经验库读取 | 3.3 |
+| `<!-- SPEC-KIT-INIT:IMPLEMENT-LESSONS:START/END -->` | `/speckit-implement` 经验库读取 | 3.4 改动 A |
+| `<!-- SPEC-KIT-INIT:IMPLEMENT-RETRO:START/END -->` | `/speckit-implement` 复盘询问 | 3.4 改动 B |
+| `<!-- SPEC-KIT-INIT:IMPLEMENT-QUALITY:START/END -->` | `/speckit-implement` 质量门禁 | 4.2 |
+| `<!-- SPEC-KIT-INIT:BUG-ASSESS-LESSONS:START/END -->` | `/speckit.bug.assess` 经验库读取 | 5.2.1 |
+| `<!-- SPEC-KIT-INIT:BUG-TEST-QUALITY-RETRO:START/END -->` | `/speckit.bug.test` 质量门禁与复盘联动 | 5.2.2 |
+
+规则：
+
+- 正则匹配成功路径与兜底追加路径**必须使用相同标记**，保证阶段 0 和回滚对两条路径一视同仁
+- 兜底追加块保留 `<!-- ⚠ 自动追加，请人工确认位置是否正确 -->` 作为面向用户的提示，但机器判断只认 `SPEC-KIT-INIT` 标记
+- 同一文件出现重复 START 标记时，视为注入异常，阶段 0 报告「重复注入」并提示人工清理
+
+### 9.2 托管文件标记（retro / quality skill）
+
+由本 Skill 部署的完整 skill 文件（非注入段）在文件顶部 YAML frontmatter 之后写入托管标记：
+
+```
+<!-- SPEC-KIT-INIT-MANAGED
+component: retro|speckit-quality
+template-version: 1
+source-version: 0.10.0
+-->
+```
+
+- `template-version`：模板结构版本，模板结构变化时递增（独立于本 Skill 的发布版本）
+- `source-version`：生成时的本 Skill 版本
+- 无此标记的文件视为用户自建或非本 Skill 生成，**不自动覆盖**
+
+### 9.3 `.specify/config.yml` 注入记录 Schema
+
+注入成功后在 `.specify/config.yml` 中追加或更新 `spec_kit_init` 字段。Schema 固定如下，新增字段时向后兼容：
+
+```yaml
+spec_kit_init:
+  version: "0.10.0"                    # 记录写入时本 Skill 的版本
+  initialized_at: "2026-08-12"         # 首次初始化的日期
+  platform: "claude"                   # 1.2 选择的平台：claude / codex / copilot / cursor / custom
+  assets:                              # 部署的完整 skill 文件版本记录（P0-6 使用）
+    retro:
+      template_version: 1
+      content_hash: "<sha256>"
+    quality_gate:
+      template_version: 1
+      content_hash: "<sha256>"
+  injections:                          # 每处注入的状态记录
+    agent_instructions:
+      status: applied
+      mode: anchored
+      template_version: 1
+    speckit_plan_lessons:
+      status: applied
+      mode: anchored
+      template_version: 1
+    speckit_implement_lessons:
+      status: applied
+      mode: anchored
+      template_version: 1
+    speckit_implement_retro:
+      status: applied
+      mode: anchored
+      template_version: 1
+    speckit_implement_quality:
+      status: applied
+      mode: anchored
+      template_version: 1
+    speckit_bug_assess_lessons:
+      status: applied
+      mode: anchored
+      template_version: 1
+    speckit_bug_test_quality_retro:
+      status: applied
+      mode: anchored
+      template_version: 1
+```
+
+**状态枚举**：
+
+| 状态 | 含义 |
+|------|------|
+| `applied` | 正则匹配成功注入，标记就位 |
+| `fallback` | 走兜底追加路径，标记就位但位置需人工确认 |
+| `missing` | 配置有记录但文件中无对应标记（被覆盖/删除） |
+| `overwritten` | 检测到 spec-kit 升级覆盖了注入内容 |
+| `user_modified` | 目标文件内容与安装时 hash 不一致（用户改过） |
+| `skipped` | 平台不支持或条件不满足，跳过注入 |
+| `failed` | 注入失败 |
+
+**mode 枚举**：`anchored`（正则锚点注入）/ `appended`（末尾兜底追加）。
+
+### 9.4 配置记录与实际文件交叉验证
+
+配置记录**不是**注入存在的事实来源——`specify` 重新安装或升级可能覆盖注入内容。阶段 0 判定某处注入状态时，必须同时读取配置记录和扫描目标文件中的 `SPEC-KIT-INIT` 标记：
+
+| 配置记录 | 实际标记 | 判定 | 处理 |
+|----------|----------|------|------|
+| 有 `applied/fallback` | 有 | ✅ 完成 | 无需处理 |
+| 有 | 无 | ⚠️ 被覆盖/删除 | 走补齐流程恢复注入 |
+| 无 | 有 | 存量注入（旧版） | 补写配置记录，不重复注入 |
+| 无 | 无 | 未注入 | 执行注入 |

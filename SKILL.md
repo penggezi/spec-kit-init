@@ -63,44 +63,116 @@ SDD（规格驱动开发）翻转传统开发流程：**规格是核心产出物
 
 - Python 3.11+、[uv](https://docs.astral.sh/uv/)、Git
 
+## 执行环境与路径约定
+
+在执行任何文件操作之前，先解析并记录两个根目录。本 Skill 内所有路径都以它们为基准，**不得使用相对路径**——本 Skill 被调用时的工作目录是目标项目（PROJECT_ROOT），而不是本 Skill 所在目录。
+
+| 变量 | 含义 | 管理哪些路径 |
+|------|------|--------------|
+| `SKILL_ROOT` | 本 Skill（spec-kit-init）所在目录的绝对路径，即当前 SKILL.md 的父目录 | `assets/`、`references/`、`scripts/` 下的资源文件 |
+| `PROJECT_ROOT` | 用户调用本 Skill 时的项目根目录 | `.specify/`、`{AGENT_FILE}`、`{AGENT_SKILL_DIR}/...` |
+
+路径规则：
+
+- 读取 Skill 资源（`assets/*`、`references/*`、`scripts/*`）时，一律使用 `{SKILL_ROOT}/` 前缀，例如 `{SKILL_ROOT}/assets/agent-instructions.md`
+- 写入或修改目标项目文件时，一律使用 `{PROJECT_ROOT}/` 前缀，例如 `{PROJECT_ROOT}/{AGENT_FILE}`
+- 若无法确定 `SKILL_ROOT`（例如资源文件缺失），终止并报告「Skill 安装不完整，缺少 {文件}」，不要猜测路径继续执行
+- 阶段 0 开始时校验以下资源存在，全部就绪才进入流程：
+  - `{SKILL_ROOT}/SKILL.md`、`{SKILL_ROOT}/scripts/ensure-specify.sh`
+  - `{SKILL_ROOT}/assets/agent-instructions.md`、`{SKILL_ROOT}/assets/sdd-workflow-doc.md`、`{SKILL_ROOT}/assets/lessons-skeleton.md`
+  - `{SKILL_ROOT}/assets/retro-skill.md`、`{SKILL_ROOT}/assets/retro-references/`（目录）
+  - `{SKILL_ROOT}/assets/quality-gate-skill.md`
+  - `{SKILL_ROOT}/references/injection-texts.md`、`{SKILL_ROOT}/references/rollback-guide.md`
+
+> 文档为简洁省略了 `{SKILL_ROOT}/` / `{PROJECT_ROOT}/` 前缀，但在实际执行时必须带上。
+
 ## 执行流程
 
 ### 阶段 0：初始化前检查
 
 在开始任何实际变更之前，先检查项目是否已被本 Skill 初始化过，避免重复注入。
 
-#### 0.1 检查项
+#### 0.1 检查项（分级检查）
 
-1. 检查 `.specify/` 目录是否存在
-2. 检查 `{AGENT_FILE}` 中是否有 `<!-- SDD:START -->` 标记
-3. 检查 `{AGENT_SKILL_DIR}/retro/SKILL.md` 是否存在
-4. 检查 `{AGENT_SKILL_DIR}/speckit-quality/SKILL.md` 是否存在
-5. 检查 `.specify/extensions/bug/` 目录是否存在
-6. 检查 `.specify/sdd-workflow.md` 是否存在
-7. 检查 `{AGENT_FILE}` 中 SDD 段是否为精简版（特征：含 `.specify/sdd-workflow.md` 指针；完整版特征：含 `## 基础命令` 等二级标题但无指针）
+> 所有检查路径均以 `{PROJECT_ROOT}` 为基准；资源文件校验见「执行环境与路径约定」。检查结果汇总为结构化状态，供 0.2 交叉验证和判定使用。
 
-#### 0.2 判断逻辑
+**A. 基础结构**
 
-| 检查结果 | 处理方式 |
-|----------|----------|
-| 全部不存在 | 全新项目，完整执行阶段 1-6 |
-| 部分存在（如只有 `.specify/` 但无 retro） | 告知用户当前状态，列出已完成和缺失的组件，询问：「检测到项目已部分初始化，是否仅补齐缺失组件？」 |
-| `{AGENT_FILE}` 有 `<!-- SDD:START -->` 标记且 SDD 段为完整版（无 `.specify/sdd-workflow.md` 指针）+ `.specify/sdd-workflow.md` 不存在 | 自动迁移（阶段 0.5）：抽取完整 SDD 段到 `.specify/sdd-workflow.md`，替换为精简版。迁移完成后按其余检查项继续判断 |
-| 全部存在 | 告知用户项目已完成初始化，询问：「项目已完成初始化。是否强制重新初始化？（这会覆盖已有配置）」 |
+1. `.specify/` 目录是否存在
+2. `.specify/config.yml` 是否存在（本 Skill 注入记录所在，见 `references/injection-texts.md` 第 9 节）
+3. `.specify/sdd-workflow.md` 是否存在且非空
+4. `{AGENT_FILE}` 是否存在；其中是否有 `<!-- SDD:START -->` 标记；SDD 段是否为精简版（特征：含 `.specify/sdd-workflow.md` 指针；完整版特征：含 `## 基础命令` 等二级标题但无指针）
+5. `{AGENT_FILE}` 顶部是否已有「经验库优先」段（特征：含「纠正即捕获」标题）
 
-#### 0.3 用户选择"补齐缺失组件"
+**B. 增强资产**
 
-根据检查结果，跳过已完成的阶段，仅执行缺失的步骤。
+6. `.specify/memory/lessons.md` 是否存在
+7. `.specify/memory/lessons-index.md` 是否存在
+8. `{AGENT_SKILL_DIR}/retro/SKILL.md` 是否存在，且含 `SPEC-KIT-INIT-MANAGED` 托管标记（区分新旧版本）
+9. `{AGENT_SKILL_DIR}/retro/references/mechanism-auditor.md` 与 `routing-auditor.md` 是否存在
+10. `{AGENT_SKILL_DIR}/speckit-quality/SKILL.md` 是否存在，且含 `SPEC-KIT-INIT-MANAGED` 托管标记
+11. `.specify/extensions/bug/` 目录是否存在（Bug Extension）
+
+**C. 注入完整性**（每条对照 `references/injection-texts.md` 第 9.1 节标记注册表，扫描目标文件中的 `SPEC-KIT-INIT` 标记）
+
+12. `/speckit-plan` 中 `SPEC-KIT-INIT:PLAN-LESSONS` 标记是否存在
+13. `/speckit-implement` 中 `SPEC-KIT-INIT:IMPLEMENT-LESSONS` 标记是否存在
+14. `/speckit-implement` 中 `SPEC-KIT-INIT:IMPLEMENT-RETRO` 标记是否存在
+15. `/speckit-implement` 中 `SPEC-KIT-INIT:IMPLEMENT-QUALITY` 标记是否存在
+16. `/speckit.bug.assess` 中 `SPEC-KIT-INIT:BUG-ASSESS-LESSONS` 标记是否存在（若 Bug Extension 存在）
+17. `/speckit.bug.test` 中 `SPEC-KIT-INIT:BUG-TEST-QUALITY-RETRO` 标记是否存在（若 Bug Extension 存在）
+
+#### 0.2 交叉验证与状态判定
+
+**配置记录 vs 实际标记**：读取 `.specify/config.yml` 中 `spec_kit_init.injections.*` 记录，与 0.1 扫描到的实际标记交叉验证（规则见 `references/injection-texts.md` 第 9.4 节）。配置记录不是事实来源，`specify` 升级可能覆盖注入内容，必须两者同时读取。
+
+**状态汇总**：将 0.1 的结果归类为「完成 / 缺失 / 被覆盖 / 需要人工确认」。
+
+| 判定 | 条件 | 处理方式 |
+|------|------|----------|
+| 全新项目 | A、B、C 全部不存在 | 完整执行阶段 1-6 |
+| 部分初始化 | 至少一个组件存在，但存在缺失或「配置有记录但实际无标记」的不一致 | 列出「完成 / 缺失 / 被覆盖」清单，询问用户走哪种模式：补齐（0.3）/ 升级（0.4） |
+| 完整初始化 | A、B、C 全部就位，且无配置与实际不一致 | 告知用户已完成初始化，询问是否升级（0.4）或重建（0.4.2） |
+| 旧式完整 SDD 段 | `{AGENT_FILE}` 有 `<!-- SDD:START -->` 且为完整版 + `.specify/sdd-workflow.md` 不存在 | 先执行阶段 0.5 自动迁移，迁移完成后按其余检查项继续判断 |
+
+#### 0.3 补齐模式（repair）
+
+> 目标：只补齐缺失或恢复被覆盖的组件，**不覆盖用户已有的任何内容**。
+
+根据检查结果，跳过已完成的步骤，仅执行缺失的部分。**补齐前先备份将修改的现有文件**（见 `references/rollback-guide.md` 事务清单）。
 
 **判断依赖关系**：补齐时需考虑组件间的依赖顺序。读取 `references/platform-support-matrix.md` 中的「组件依赖矩阵」和「补齐场景决策表」，按依赖关系确定执行顺序。例如：
 - 已有 `.specify/` 和 speckit-* 命令 → 跳过阶段 1.5
-- 缺少 retro skill → 仅执行阶段 3.2
+- 缺少 retro skill → 仅执行阶段 3.2（含 3.2.1）
 - 缺少 quality gate → 仅执行阶段 4
 - speckit-implement 缺少两项注入 → 先执行 3.4（经验注入）再执行 4.2（质量门禁注入），因为 4.2 需要知道 3.4 的注入路径
+- 配置有记录但实际无标记（被覆盖）→ 仅重新注入对应项，不重建其他组件
+- 只有 `lessons-index.md` 缺失 → 从现有 `lessons.md` 正文重建索引（见 3.1 边界处理），不覆盖正文
 
-#### 0.4 用户选择"强制重新初始化"
+**修补失败路径**：注入被覆盖且锚点匹配率仍低时，该注入标记为 `overwritten`，走兜底追加并提示人工确认位置。
 
-先展示将被覆盖/修改的文件清单，用户确认后完整执行阶段 1-6。
+#### 0.4 升级 / 重建模式
+
+> 旧版「强制重新初始化」语义模糊，现拆分为两种模式：**升级**（默认推荐）和**重建**。
+
+##### 0.4.1 升级（upgrade）
+
+> 目标：把本 Skill 托管且**未被用户修改**的内容更新到当前模板版本；用户改过的内容不动。
+
+判定与处理：
+
+| 目标文件状态 | 处理 |
+|--------------|------|
+| 无 `SPEC-KIT-INIT-MANAGED` 标记 | 视为用户自建，跳过，不覆盖 |
+| 有标记，`template-version` 与当前一致 | 跳过 |
+| 有标记，`template-version` 落后，内容与安装时一致（hash 匹配） | 自动升级到当前模板 |
+| 有标记，内容与安装时不一致（hash 不匹配，用户改过） | 展示差异，询问用户：覆盖 / 保留 / 合并 |
+
+处理完成后，更新 `.specify/config.yml` 中对应 `assets.*` 的 `template-version` 与 `content_hash`。若同时检测到注入标记被覆盖（`overwritten`），顺带恢复注入。
+
+##### 0.4.2 重建（reset，原「强制重新初始化」）
+
+先展示将被覆盖/修改的文件完整清单（含托管标记判断出的用户改动项），**明确说明哪些是用户内容会被覆盖**，用户确认后完整执行阶段 1-6。重建前对所有将修改的现有文件做事务备份，失败时按 `references/rollback-guide.md` 恢复。
 
 #### 0.5 自动迁移旧式完整 SDD 段
 
@@ -115,7 +187,7 @@ SDD（规格驱动开发）翻转传统开发流程：**规格是核心产出物
    - 去掉 `<!-- SDD:START -->` / `<!-- SDD:END -->` 标记行
    - 首行标题改为 `# SDD 工作流指南（完整版）`，并在标题下补一行 `> 本文件由 spec-kit-init 从 {AGENT_FILE} 迁移生成，是 SDD 完整工作流说明。`
    - 其余内容原样保留（其中的 `{AGENT_FILE}` 等占位符已被此前注入替换为实际值）
-3. 将 `{AGENT_FILE}` 中的 SDD 段整体替换为精简版（`assets/agent-instructions.md` 第 1 节内容）
+3. 将 `{AGENT_FILE}` 中的 SDD 段整体替换为精简版（`{SKILL_ROOT}/assets/agent-instructions.md` 第 1 节内容）
 4. 告知用户：「已将 {AGENT_FILE} 中的完整 SDD 说明迁移到 `.specify/sdd-workflow.md`，{AGENT_FILE} 已替换为精简摘要（命令速查 + 指针），非 SDD 任务不再加载完整 SDD 文档。」
 
 **边界处理**：
@@ -128,7 +200,7 @@ SDD（规格驱动开发）翻转传统开发流程：**规格是核心产出物
 
 确认核心依赖就绪：
 
-- Python 3.11+（`python3 --version`）
+- Python 3.11+：依次尝试 `python3 --version` → `python --version` → `py -3 --version`（Windows 常见只有 `python` 或 `py`），取第一个成功且版本号 ≥ 3.11 的命令；版本不足时引导用户升级
 - Git（`git --version`）
 - [uv](https://docs.astral.sh/uv/)（`uv --version`，如未安装引导用户安装）
 
@@ -143,7 +215,7 @@ SDD（规格驱动开发）翻转传统开发流程：**规格是核心产出物
 | `CLAUDE.md` | Claude Code | 1（最高） |
 | `AGENTS.md` | Codex | 2 |
 | `.github/copilot-instructions.md` | GitHub Copilot | 3 |
-| `.cursor/rules/` 目录 | Cursor | 4 |
+| `.cursor/rules/` 目录（含 `.mdc` / `.md`）或 `.cursorrules` | Cursor | 4 |
 
 **检测逻辑**：
 - 恰好命中一个 → 直接使用，告知用户"检测到项目使用 {AGENT_NAME}，自动配置"
@@ -163,8 +235,8 @@ SDD（规格驱动开发）翻转传统开发流程：**规格是核心产出物
 
 | 变量                | 用途                       | Claude Code      | Codex            | Copilot                           | Cursor            |
 | ----------------- | ------------------------ | ---------------- | ---------------- | --------------------------------- | ----------------- |
-| `AGENT_FILE`      | 指令文件路径                   | `CLAUDE.md`      | `AGENTS.md`      | `.github/copilot-instructions.md` | `.cursor/rules/`  |
-| `AGENT_TITLE`     | 文件 `#` 标题                | `# CLAUDE.md`    | `# AGENTS.md`    | `# Tips`                          | `# Rules`         |
+| `AGENT_FILE`      | 指令文件路径                   | `CLAUDE.md`      | `AGENTS.md`      | `.github/copilot-instructions.md` | `.cursor/rules/spec-kit-init.mdc` ² |
+| `AGENT_TITLE`     | 文件 `#` 标题                | `# CLAUDE.md`    | `# AGENTS.md`    | `# Tips`                          | `# Spec-Kit 项目规则` |
 | `AGENT_NAME`      | 展示名称                     | `Claude Code`    | `Codex`          | `GitHub Copilot`                  | `Cursor`          |
 | `AGENT_SKILL_DIR` | skill 安装目录               | `.claude/skills` | `.agents/skills` | `.claude/skills`¹                 | `.claude/skills`¹ |
 | `AGENT_SPECIFY`   | specify --integration 参数 | `claude`         | `codex`          | `N/A`                             | `N/A`             |
@@ -172,8 +244,10 @@ SDD（规格驱动开发）翻转传统开发流程：**规格是核心产出物
 如检测到项目中已有指令文件（如 CLAUDE.md、AGENTS.md），可跳过询问直接使用对应平台的变量。
 
 > ¹ Copilot/Cursor 自身无标准 skill 系统，此处仅用于统一安装 retro skill（经验沉淀），speckit-\* 系列命令将在后续步骤中自动跳过。
+>
+> ² Cursor 的 `AGENT_FILE` 是**具体文件**而非目录：`.cursor/rules/` 是规则目录，本 Skill 写入独立的 `.cursor/rules/spec-kit-init.mdc`，不修改用户已有的其他规则文件。文件需带 `.mdc` frontmatter（`description` + `alwaysApply: true`）。若项目只有旧版 `.cursorrules`，仍创建新的 `.cursor/rules/spec-kit-init.mdc`，不覆盖旧文件。
 
-> **注意**：Copilot 和 Cursor 的 `specify` 支持有限，speckit-\* 系列命令不可用，但 retro skill 和 lessons.md 经验沉淀机制不受影响，因为 `lessons.md` 是纯 Markdown 文件，与平台无关。
+> **注意**：Copilot 和 Cursor 的 `specify` 支持有限，speckit-\* 系列命令与 `/retro` 斜杠命令**不可用**。经验沉淀机制在这些平台上仅保留「经验文件读取 + 纠正即捕获 + 自然语言复盘」能力：`lessons.md` 是纯 Markdown 文件，与平台无关；指令注入段中涉及 `调用 /retro` 的表述，在这些平台替换为「按项目指令文件中的复盘流程执行」。
 
 #### 1.2.1 配置确认
 
@@ -232,10 +306,10 @@ AGENT_SPECIFY   = specify --integration 参数（claude/codex/N/A）
 检测并安装 `specify-cli`：
 
 ```bash
-bash scripts/ensure-specify.sh
+bash "{SKILL_ROOT}/scripts/ensure-specify.sh"
 ```
 
-`ensure-specify.sh` 会自动检测 `uv` 和 `specify`，未安装时自动安装。失败时根据提示处理。
+`ensure-specify.sh` 会自动检测 `uv` 和 `specify`，未安装时自动安装。脚本带安装后硬校验（确认 `specify` 可执行而非仅安装命令退出码为 0），失败时根据提示处理。
 
 安装成功后执行 `specify init`。由于 `--force` 不跳过内部交互式选择，在非交互式终端中须通过管道发送空行避免阻塞：
 
@@ -266,11 +340,16 @@ echo "" | PYTHONIOENCODING=utf-8 specify init --here --integration {AGENT_SPECIF
 - 版本匹配 → 正常继续
 - 版本不匹配 → 输出警告「spec-kit 版本 {当前版本} 可能与本 Skill 注入锚点不完全兼容，建议关注后续阶段的注入结果」，但**继续执行**（因为 spec-kit 的变更日志未知，无法预先断定不兼容）。注入阶段（3/4/5）的兼容性预检会进一步判断
 
-*speckit-git-* 清理\*：`specify init` 可能仍会生成 `speckit-git-*` 相关 skill（git commit/tag/rebase 等工作流扩展），这些命令不在本 Skill 核心流程范围内，执行清理：
+*speckit-git-* 清理\*：`specify init` 可能仍会生成 `speckit-git-*` 相关 skill（git commit/tag/rebase 等工作流扩展），这些命令不在本 Skill 核心流程范围内。**清理前先确认**：
+
+1. 在 `specify init` 执行前，记录 `{PROJECT_ROOT}/{AGENT_SKILL_DIR}/` 下已有的 `speckit-git-*` 目录清单（防止误删用户原有内容）
+2. `specify init` 执行后，只清理**本次新增**的 `speckit-git-*` 目录；若无法区分新旧，列出清单询问用户确认后再删除
 
 ```bash
-rm -rf {AGENT_SKILL_DIR}/speckit-git-*
+rm -rf "{PROJECT_ROOT}/{AGENT_SKILL_DIR}"/speckit-git-*
 ```
+
+> 使用 `{PROJECT_ROOT}/{AGENT_SKILL_DIR}` 前缀，确保删除发生在目标项目而非 Skill 目录。
 
 #### 1.6 自动写入基本宪章
 
@@ -321,10 +400,11 @@ Constitution 是 SDD 的最高准则。初始化时自动写入一份基本宪�
 
 关键点：
 
-- **必须在** **`{AGENT_FILE}`** **顶部注入「经验库优先」段**：在 `{AGENT_TITLE}` 标题行之后、第一个 `##` 节之前，插入模板第 2 节内容
+- **必须在** **`{AGENT_FILE}`** **顶部注入「经验库优先」段**：在 `{AGENT_TITLE}` 标题行之后、第一个 `##` 节之前，插入模板第 2 节内容。带 YAML frontmatter 的目标文件（如 Cursor 的 `.mdc`）先跳过 frontmatter，在 `---` 结束之后、一级标题之后插入
 - 精简 SDD 段落使用模板第 1 节内容（只含命令速查表 + 指针，**不**含完整命令说明）
-- 完整工作流文档写入 `.specify/sdd-workflow.md`（读取 `assets/sdd-workflow-doc.md`），确保包含 `/retro` 行和「经验沉淀（Retro）」章节
+- 完整工作流文档写入 `.specify/sdd-workflow.md`（读取 `{SKILL_ROOT}/assets/sdd-workflow-doc.md`），确保包含 `/retro` 行和「经验沉淀（Retro）」章节
 - 写入后确认两份文件均存在且非空
+- 注入完成后，在 `.specify/config.yml` 中追加或更新 `spec_kit_init.injections.agent_instructions` 字段（`status: applied`，Schema 见 `references/injection-texts.md` 第 9.3 节）
 
 ### 阶段 3-5 并行编排
 
@@ -345,7 +425,20 @@ Constitution 是 SDD 的最高准则。初始化时自动写入一份基本宪�
 
 > **设计意图**：放在 `.specify/memory/` 下，与 `constitution.md` 同目录，确保 speckit 生态内所有经验资产集中管理，便于 `/speckit-plan` 和 `/speckit-implement` 统一读取。
 
-读取 `assets/lessons-skeleton.md`，按其中的模板创建：
+读取 `{SKILL_ROOT}/assets/lessons-skeleton.md`，按其中的模板创建两个文件。**两个文件逐文件独立处理，不得用模板整体覆盖已有文件**：
+
+| 文件状态 | 处理 |
+|----------|------|
+| 不存在 | 按模板创建 |
+| 存在且非空 | 保留，不覆盖 |
+| 存在但为空 | 询问用户后再按模板补齐 |
+
+**边界处理（单文件缺失）**：
+- 仅 `lessons-index.md` 缺失 → 从现有 `lessons.md` 正文重建索引（逐条提取 `## YYYY-MM-DD · 标题` 生成 `YYYY-MM-DD · 根因关键词 · 简述`），不要创建空索引
+- 仅 `lessons.md` 缺失 → 保留 `lessons-index.md`，创建正文骨架，并提示索引中可能存在悬空记录
+- 两文件均为空内容（如刚初始化）→ 正常按模板创建
+
+产出文件（均在 `{PROJECT_ROOT}/.specify/memory/` 下）：
 - `.specify/memory/lessons.md` — 经验正文（最新在上）
 - `.specify/memory/lessons-index.md` — 轻量去重索引（与正文物理隔离，append-only 写入）
 
@@ -353,18 +446,27 @@ Constitution 是 SDD 的最高准则。初始化时自动写入一份基本宪�
 
 > 如果 `{AGENT_SKILL_DIR}` 不可用或为 undefined（如自定义模式未指定），默认使用 `.claude/skills` 作为回退目录。
 
-读取 `assets/retro-skill.md`，将其内容写入 `{AGENT_SKILL_DIR}/retro/SKILL.md`。
+读取 `{SKILL_ROOT}/assets/retro-skill.md`，部署到 `{PROJECT_ROOT}/{AGENT_SKILL_DIR}/retro/SKILL.md`。部署判定（模板含 `SPEC-KIT-INIT-MANAGED` 托管标记，见 `references/injection-texts.md` 第 9.2 节）：
 
-如已有此文件，跳过创建。
+| 目标文件状态 | 处理 |
+|--------------|------|
+| 不存在 | 直接写入当前模板 |
+| 含托管标记，`template-version` 与当前一致 | 跳过（幂等） |
+| 含托管标记，`template-version` 落后且内容与安装时一致 | 自动升级到当前模板 |
+| 含托管标记，内容与安装时不一致（用户改过） | 展示差异，询问用户：覆盖 / 保留 / 合并 |
+| 无托管标记 | 视为用户自建文件，跳过并在汇报中说明 |
+
+部署完成后，在 `.specify/config.yml` 中记录/更新 `spec_kit_init.assets.retro.template_version` 与 `content_hash`（计算已部署文件的 sha256）。
 
 #### 3.2.1 安装 /retro 子代理审查模板
 
 > retro skill 的对抗审查依赖两个独立的审查角色 prompt 模板。这些文件需要和 SKILL.md 一起部署到 retro skill 目录下。
 
-将 `assets/retro-references/` 整个目录复制到 `{AGENT_SKILL_DIR}/retro/references/`：
+将 `{SKILL_ROOT}/assets/retro-references/` 整个目录复制到 `{PROJECT_ROOT}/{AGENT_SKILL_DIR}/retro/references/`（注意源目录以 `.` 结尾，避免产生嵌套的 `references/retro-references/` 目录）：
 
 ```bash
-cp -r assets/retro-references/ {AGENT_SKILL_DIR}/retro/references/
+mkdir -p "{PROJECT_ROOT}/{AGENT_SKILL_DIR}/retro/references"
+cp -r "{SKILL_ROOT}/assets/retro-references/." "{PROJECT_ROOT}/{AGENT_SKILL_DIR}/retro/references/"
 ```
 
 确认部署后的文件结构：
@@ -398,7 +500,7 @@ cp -r assets/retro-references/ {AGENT_SKILL_DIR}/retro/references/
 
 **正则匹配失败时**：使用第 1.2 节兜底追加文本，追加后明确告知用户："/speckit-plan 自动注入未完全成功（模板结构已变化），已在文件末尾追加插桩，请人工确认并调整位置。"
 
-**注入成功后**，在 `.specify/config.yml` 中追加或更新 `spec_kit_init.injections.speckit-plan` 字段，记录注入日期和内容摘要，供后续运行（阶段 0）跳过已完成注入。
+**注入成功后**，在 `.specify/config.yml` 中追加或更新 `spec_kit_init.injections.speckit_plan_lessons` 字段（Schema 见 `references/injection-texts.md` 第 9.3 节，`status` 为 `applied` 或 `fallback`），供阶段 0 交叉验证使用。
 
 #### 3.4 改造 /speckit-implement（注入 lessons.md 必读 + 复盘询问）⚡第二波
 
@@ -423,7 +525,7 @@ cp -r assets/retro-references/ {AGENT_SKILL_DIR}/retro/references/
 
 **正则匹配失败时的兜底**：任一改动无法匹配时，使用第 3.2 节兜底追加文本。追加后明确告知用户："/speckit-implement 自动注入未完全成功（模板结构已变化），已在文件末尾追加插桩，请人工确认并调整位置。"
 
-**注入成功后**，在 `.specify/config.yml` 中追加或更新 `spec_kit_init.injections.speckit-implement` 字段，记录注入日期和内容摘要，供后续运行（阶段 0）跳过已完成注入。
+**注入成功后**，在 `.specify/config.yml` 中分别追加或更新 `spec_kit_init.injections.speckit_implement_lessons` 与 `speckit_implement_retro` 字段（Schema 见 `references/injection-texts.md` 第 9.3 节），供阶段 0 交叉验证使用。改动 A 与改动 B 各记录一条。
 
 #### 3.5 验证闭环完整性
 
@@ -447,9 +549,17 @@ cp -r assets/retro-references/ {AGENT_SKILL_DIR}/retro/references/
 
 #### 4.1 安装 /speckit-quality skill ⚡第一波
 
-读取 `assets/quality-gate-skill.md`，将其内容写入 `{AGENT_SKILL_DIR}/speckit-quality/SKILL.md`。
+读取 `{SKILL_ROOT}/assets/quality-gate-skill.md`，部署到 `{PROJECT_ROOT}/{AGENT_SKILL_DIR}/speckit-quality/SKILL.md`。部署判定与 3.2 相同（基于 `SPEC-KIT-INIT-MANAGED` 托管标记与 hash 比对）：
 
-如已有此文件，跳过创建。
+| 目标文件状态 | 处理 |
+|--------------|------|
+| 不存在 | 直接写入当前模板 |
+| 含托管标记，`template-version` 与当前一致 | 跳过（幂等） |
+| 含托管标记，`template-version` 落后且内容与安装时一致 | 自动升级到当前模板 |
+| 含托管标记，内容与安装时不一致（用户改过） | 展示差异，询问用户：覆盖 / 保留 / 合并 |
+| 无托管标记 | 视为用户自建文件，跳过并在汇报中说明 |
+
+部署完成后，在 `.specify/config.yml` 中记录/更新 `spec_kit_init.assets.quality_gate.template_version` 与 `content_hash`。
 
 确认安装后的文件结构：
 
@@ -478,7 +588,7 @@ cp -r assets/retro-references/ {AGENT_SKILL_DIR}/retro/references/
 
 **正则匹配失败时的兜底**：使用第 4.2 节兜底追加文本。追加后明确告知用户：”/speckit-implement 质量门禁注入未完全成功（模板结构已变化），已在文件末尾追加插桩，请人工确认并调整位置。”
 
-**注入成功后**，在 `.specify/config.yml` 中追加或更新 `spec_kit_init.injections.speckit-implement-quality` 字段，记录注入日期和内容摘要，供后续运行（阶段 0）跳过已完成注入。
+**注入成功后**，在 `.specify/config.yml` 中追加或更新 `spec_kit_init.injections.speckit_implement_quality` 字段（Schema 见 `references/injection-texts.md` 第 9.3 节），供阶段 0 交叉验证使用。
 
 #### 4.3 验证质量门禁完整性
 
@@ -536,7 +646,7 @@ Bug Extension 的三步流程本身已完整，在此之上接入本项目已有
 
 **正则匹配失败时**：使用第 5.2 节兜底追加文本，追加后明确告知用户："/speckit.bug.assess 自动注入未完全成功（模板结构已变化），已在文件末尾追加插桩，请人工确认并调整位置。"
 
-**注入成功后**，在 `.specify/config.yml` 中追加或更新 `spec_kit_init.injections.speckit-bug-assess` 字段。
+**注入成功后**，在 `.specify/config.yml` 中追加或更新 `spec_kit_init.injections.speckit_bug_assess_lessons` 字段（Schema 见 `references/injection-texts.md` 第 9.3 节）。
 
 ##### 5.2.2 改造 `/speckit.bug.test`
 
@@ -553,7 +663,7 @@ Bug Extension 的三步流程本身已完整，在此之上接入本项目已有
 
 **正则匹配失败时**：使用第 6.2 节兜底追加文本，追加后明确告知用户："/speckit.bug.test 自动注入未完全成功（模板结构已变化），已在文件末尾追加插桩，请人工确认并调整位置。"
 
-**注入成功后**，在 `.specify/config.yml` 中追加或更新 `spec_kit_init.injections.speckit-bug-test` 字段。
+**注入成功后**，在 `.specify/config.yml` 中追加或更新 `spec_kit_init.injections.speckit_bug_test_quality_retro` 字段（Schema 见 `references/injection-texts.md` 第 9.3 节）。
 
 > 注意：`specify extension` 重新安装或升级时可能覆盖注入内容，届时需重新执行注入。`.specify/config.yml` 中的注入记录可用于检测覆盖。
 
@@ -575,7 +685,7 @@ Bug Extension 的三步流程本身已完整，在此之上接入本项目已有
 ## 约束
 
 - 不删除用户已有文件，除非明确同意
-- 注入 `{AGENT_FILE}` 用 `<!-- SDD:START -->` / `<!-- SDD:END -->` 标记
+- 注入 `{AGENT_FILE}` 用 `<!-- SDD:START -->` / `<!-- SDD:END -->` 标记；注入 speckit-* 命令用 `<!-- SPEC-KIT-INIT:<组件>:START/END -->` 标记（注册表见 `references/injection-texts.md` 第 9.1 节）
 - 已有项目先展示变更摘要再执行：即将创建的文件清单（.specify/ 目录结构、{AGENT\_SKILL\_DIR}/speckit-*、{AGENT\_FILE} 注入段）、即将修改的现有文件（{AGENT\_FILE}、{AGENT\_SKILL\_DIR}/speckit-*）。用户确认后再执行
 - 不再调用内置 `/init`
 - 经验沉淀机制（/retro + lessons.md + speckit 改造）是初始化的一部分，不要跳过
@@ -590,5 +700,5 @@ Bug Extension 的三步流程本身已完整，在此之上接入本项目已有
 | **可恢复** | 注入匹配失败，但可走兜底追加路径 | 执行兜底方案，明确告知用户需人工确认位置 | 正则匹配失败时追加到文件末尾 |
 
 > 各阶段步骤的失败级别在其描述中标注（如「失败即终止」= 致命，「失败记录原因，后续跳过」= 可降级，「走兜底追加」= 可恢复）
-- **回滚与恢复**：初始化中途失败时，读取 `references/rollback-guide.md` 按失败场景执行对应清理步骤
+- **事务与回滚**：执行任何变更前，在 `.specify/.spec-kit-init/transactions/<run-id>/` 建立事务清单（含备份与 manifest），修改现有文件前必须先备份。初始化中途失败时，读取 `references/rollback-guide.md` 按事务清单精确回滚——**只撤销本次运行创建/修改的内容，禁止无条件 `rm -rf` 或通配符清理**
 

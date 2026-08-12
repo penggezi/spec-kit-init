@@ -6,6 +6,12 @@ user-invocable: true
 disable-model-invocation: false
 ---
 
+<!-- SPEC-KIT-INIT-MANAGED
+component: retro
+template-version: 1
+source-version: 0.10.0
+-->
+
 ## User Input
 
 ```text

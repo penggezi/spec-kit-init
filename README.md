@@ -51,11 +51,15 @@
 |------|----------|------------|----------|----------|
 | **Claude Code** | `CLAUDE.md` | `.claude/skills` | ✅ 完整支持 | ✅ 完整支持 |
 | **Codex** | `AGENTS.md` | `.agents/skills` | ✅ 完整支持 | ✅ 完整支持 |
-| **GitHub Copilot** | `.github/copilot-instructions.md` | `.claude/skills` ¹ | ❌ 不支持 | ✅ 仅经验沉淀 |
-| **Cursor** | `.cursor/rules/` | `.claude/skills` ¹ | ❌ 不支持 | ✅ 仅经验沉淀 |
+| **GitHub Copilot** | `.github/copilot-instructions.md` | `.claude/skills` ¹ | ❌ 不支持 | ⚠️ 经验文件 + 纠正捕获 |
+| **Cursor** | `.cursor/rules/spec-kit-init.mdc` ² | `.claude/skills` ¹ | ❌ 不支持 | ⚠️ 经验文件 + 纠正捕获 |
 | **其他（自定义）** | 逐一配置 | 逐一配置 | 按配置决定 | 按配置决定 |
 
-> ¹ Copilot/Cursor 自身无标准 skill 系统，使用 `.claude/skills` 仅用于统一安装 retro skill。spec-kit 系列命令在这些平台上不可用，但 lessons.md 经验沉淀机制不受影响——它是纯 Markdown 文件，与平台无关。
+> ¹ Copilot/Cursor 自身无标准 skill 系统，使用 `.claude/skills` 仅用于统一安装 retro skill。spec-kit 系列命令与 `/retro` 斜杠命令在这些平台上不可用。
+>
+> ² Cursor 的指令文件是**具体 `.mdc` 文件**（带 `description` + `alwaysApply` frontmatter），不是 `.cursor/rules/` 目录；不修改用户已有其他规则文件。
+>
+> ³ Copilot/Cursor 的经验沉淀只保留「经验文件读取 + 纠正即捕获 + 自然语言复盘」能力——`lessons.md` 是纯 Markdown 文件，与平台无关；指令注入段中「调用 /retro」的表述在这些平台替换为「按复盘流程执行」。
 
 ---
 
@@ -76,12 +80,18 @@ spec-kit-init/
 │                                              #   · 跨平台颜色兼容
 │
 ├── references/
-│   ├── injection-texts.md                     # 注入文本片段仓库（7 个节）
+│   ├── injection-texts.md                     # 注入文本片段仓库（9 个节）
 │   │                                          #   各阶段向 speckit-* 注入的精确文本
+│   │                                          #   · 第 8 节：注入兼容性锚点定义
+│   │                                          #   · 第 9 节：SPEC-KIT-INIT 标记注册表 + config.yml Schema
 │   ├── report-template.md                     # 阶段 6 汇报模板
 │   │                                          #   初始化完成后展示的汇总信息
-│   └── rollback-guide.md                      # 初始化失败回滚指南
-│                                              #   按失败场景执行对应清理步骤
+│   ├── rollback-guide.md                      # 事务式回滚指南
+│   │                                          #   备份清单 + 精确回滚，禁止无条件 rm -rf
+│   ├── parallel-orchestration.md              # 阶段 3-5 并行编排方案
+│   │                                          #   依赖图 + 每波说明
+│   └── platform-support-matrix.md             # 四平台支持矩阵 + 组件依赖 + 补齐决策表
+│                                              #   补齐/升级/重建三种模式的执行顺序
 │
 └── assets/
     ├── agent-instructions.md                  # 指令文件注入模板
@@ -131,7 +141,7 @@ spec-kit-init/
 
 ### 阶段 0：初始化前检查
 
-检查项目是否已被初始化过，支持全新初始化、补齐缺失组件、强制重新初始化三种路径，避免重复注入。
+检查项目是否已被初始化过，支持全新初始化、补齐（repair）、升级（upgrade）、重建（reset）四种路径，避免重复注入。阶段 0 分级检查基础结构 / 增强资产 / 注入完整性，并将 `.specify/config.yml` 注入记录与目标文件中的 `SPEC-KIT-INIT` 标记交叉验证，能识别注入被 spec-kit 升级覆盖等存量异常。
 
 ### 阶段 1：分析 + 初始化
 
@@ -257,7 +267,7 @@ SKILL.md 本身包含全部流程描述，`references/` 和 `assets/` 下的文�
 
 ### 物理隔离的轻量去重索引
 
-传统做法是将去重信息嵌入 `lessons.md` 正文（如 frontmatter 中的 hash），但这会导致去重扫描成本随经验积累线性膨胀。本项目的方案是将索引与正文**物理隔离**——`lessons-index.md` 只存一行摘要（`YYYY-MM-DD · 根因关键词 · 简述`），复盘时先读索引做关键词比对，命中后才读正文做精确比对。确保 O(n) 扫描成本恒定。
+传统做法是将去重信息嵌入 `lessons.md` 正文（如 frontmatter 中的 hash），但这会导致去重扫描成本随经验积累线性膨胀。本项目的方案是将索引与正文**物理隔离**——`lessons-index.md` 只存一行摘要（`YYYY-MM-DD · 根因关键词 · 简述`），复盘时先读索引做关键词比对，命中后才读正文做精确比对。索引扫描仍为 O(n)，但每条记录极小、且无需加载完整正文，使上下文与读取成本显著低于直接扫描正文。
 
 ### 参考源勘误驱动的经验挖掘
 
