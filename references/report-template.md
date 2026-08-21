@@ -48,6 +48,10 @@
    → 空目录或新项目跳过此步
    → 已有项目执行后可让 AI 在后续会话中了解项目架构
 
+[可选-知识库] 外部知识库链接（可选）── 链接本地文档目录供 AI 按需参考
+   → 已在 {AGENT_FILE} 注入「外部知识库（按需参考）」段，路径：{KB_PATHS}
+   → AI 开始 SDD 任务或涉及相关领域时按需检索，不整体读取
+
 [可选-Bug重试] Bug Extension 安装失败（需处理）── 请使用以下命令重试：
    → specify extension add bug --force
 
@@ -98,6 +102,7 @@
 3. **不保留空位**：跳过的标签从列表中完全移除，不显示编号
 4. 移除条件：
    - `[可选-代码分析]`：空目录或新项目时移除
+   - `[可选-知识库]`：`KB_ENABLED=false` 时移除
    - `[可选-Bug重试]`：`BUG_EXTENSION_INSTALLED=true` 时移除
    - `[核心-Bug修复]`：`BUG_EXTENSION_INSTALLED=false` 时替换为失败原因和重试命令
    - `[核心-宪章]`：Copilot/Cursor 或已有宪章时替换为「宪章已存在，跳过自动初始化」

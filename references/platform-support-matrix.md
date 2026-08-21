@@ -11,8 +11,11 @@
 | **代码质量门禁**（`/speckit-quality`） | ✅ 完整 | ✅ 完整 | ❌ 不支持 | ❌ 不支持 |
 | **经验沉淀机制**（`/retro` + `lessons.md`） | ✅ 完整 | ✅ 完整 | ⚠️ 部分¹ | ⚠️ 部分¹ |
 | **Constitution 管理** | ✅ 完整 | ✅ 完整 | ❌ 不支持 | ❌ 不支持 |
+| **外部知识库参考**（`{AGENT_FILE}` 注入） | ✅ 完整 | ✅ 完整 | ✅ 完整 | ✅ 完整 |
 
 > ¹ Copilot/Cursor 不支持 `/retro` skill 的斜杠命令调用。经验沉淀机制在这些平台上**只保留「经验文件读取 + 纠正即捕获 + 自然语言复盘」能力**：`lessons.md` 是纯 Markdown 文件，与平台无关；指令注入段中涉及「调用 /retro」的表述替换为「按项目指令文件中的复盘流程执行」。不应宣称 `/retro` 或 `/speckit-*` 命令在这些平台可调用。
+>
+> 外部知识库参考是纯文件引用注入（在 `{AGENT_FILE}` 写入知识库路径与按需检索指令），不依赖 speckit 命令或 skill 系统，四平台均可用。
 
 **skill 安装目录**：Copilot/Cursor 自身无标准 skill 系统。安装时 retro skill 写入 `.claude/skills/retro/` 作为统一回退目录。
 
@@ -66,6 +69,7 @@ Bug Extension 注入 (5.2)               ← 依赖：5.1 BUG_EXTENSION_INSTALLE
 | speckit-implement 有但未注入（质量，无 `IMPLEMENT-QUALITY` 标记）| 执行 4.2 | 3.4 注入状态已知 |
 | speckit-implement 缺少两项注入 | 先 3.4 → 后 4.2 | 顺序依赖 |
 | 配置有记录但实际无标记（注入被 spec-kit 升级覆盖） | 仅重新注入对应项（3.3/3.4/4.2/5.2.x） | 对应文件存在 |
+| knowledge_base 已配置但 `{AGENT_FILE}` 无 `KB-REFERENCE` 标记 | 仅重新注入外部知识库段（阶段 2 KB 注入步骤，沿用 config.yml 记录的路径） | `{AGENT_FILE}` 存在或即将创建 |
 | spec-kit 有但 Bug Extension 缺失 | 执行 1.5 的 ext add → 5.1 → 5.2 | `{AGENT_SPECIFY}` 有值 |
 
 > 当多个缺失组件之间无依赖时（如同时缺少 retro + quality skill），可并行补齐。

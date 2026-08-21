@@ -20,6 +20,8 @@
 4. **代码质量门禁初始化** → `/speckit-quality` skill + implement 增量质量检查注入
 5. **Bug 修复工作流初始化** → 官方 Bug Extension + lessons、质量门禁、复盘联动
 
+> **可选增强**：初始化时询问是否链接外部知识库（本地文档目录，阶段 1.2.2），链接后注入 `{AGENT_FILE}` 供 AI 按需参考。
+
 ## 架构要点
 
 本项目**不是传统代码项目**，而是一个 Markdown 驱动的 Skill 定义。核心逻辑全部在 `SKILL.md` 中以分阶段流程描述，没有可执行的代码文件（除了一个 bash 辅助脚本）。
@@ -30,7 +32,7 @@
 |------|------|
 | `SKILL.md` | **主入口**。定义 7 个阶段（幂等检查 → 环境检测 → SDD 安装 → 经验沉淀 → **质量门禁** → **Bug 修复工作流** → 汇报），是全部逻辑的载体 |
 | `scripts/ensure-specify.sh` | bash 脚本，检测并安装 `specify-cli`（带网络重试和超时保护） |
-| `assets/agent-instructions.md` | 注入模板：精简 SDD 段落（命令速查 + 指针）+ 经验库优先段 + 完整文档写入说明 |
+| `assets/agent-instructions.md` | 注入模板：精简 SDD 段落（命令速查 + 指针）+ 经验库优先段 + 外部知识库段（2.5 节，可选）+ 完整文档写入说明 |
 | `assets/sdd-workflow-doc.md` | 完整 SDD 工作流文档模板，阶段 2 写入目标项目的 `.specify/sdd-workflow.md` |
 | `references/report-template.md` | 阶段 6 汇报模板，初始化完成后展示的汇总信息 |
 | `assets/retro-skill.md` | `/retro` 复盘 Skill 的完整定义模板，含 3 种模式 + 5 层经验质量筛选 + 双角色对抗审查 + 去重机制 |
@@ -53,6 +55,7 @@
 阶段 1：分析 + 初始化
   ├── 1.1 环境检测（Python 3.11+、uv、Git）
   ├── 1.2 选择 AI 编码工具（优先自动检测，Claude Code / Codex / Copilot / Cursor / 自定义）
+  ├── 1.2.2 询问外部知识库（可选，本地文档目录，多路径校验后注入指令文件）
   ├── 1.3 确认执行（一句话确认后执行）
   ├── 1.4 代码库分析（已有项目时，与 1.5 并行执行）
   ├── 1.5 执行 specify init（含 Bug Extension 安装，与 1.4 并行执行）
@@ -94,6 +97,7 @@
 - **支持多平台**：Claude Code、Codex、GitHub Copilot、Cursor 各有不同的指令文件路径和配置参数
 - **增量质量门禁**：`assets/quality-gate-skill.md` 是质量范围规则的唯一事实来源。默认收集 Git 中已暂存、未暂存与未追踪的改动，并只加入有证据的直接影响范围；删除文件不直接 lint。公共契约、配置/依赖、跨模块或影响边界不明时才升级模块或全量，且必须报告升级原因；未修改区域的存量问题不得归因于本次改动。`SKILL.md`、README 与指令注入模板只引用该规则，不重复维护固定全仓库命令。
 - **Bug Extension 随 SDD 框架一同安装**：`specify extension add bug --force` 已随 `specify-cli` 打包，无需网络，直接链在阶段 1.5 的 `specify init` 后一步完成，消除独立的安装步骤。
+- **外部知识库按需参考（非必读）**：外部知识库是项目外的本地文档目录（阶段 1.2.2 询问，可选）。注入 `{AGENT_FILE}` 的段落只指示 AI「按需检索、只读相关文件、不整体读取」，与「经验库优先」段的必读语义刻意区分——知识库可能很大，整体读取会浪费每次会话的上下文。外部知识库目录全程只读，绝不写入。
 - **阶段间并行编排**：阶段 1.4（代码库分析）与 1.5（specify init + Bug Extension 安装）互不依赖，可并行执行。阶段 3-5 中，文件创建操作（3.1/3.2/4.1）可内部并行；speckit-plan 与 speckit-implement 的注入（3.3/3.4）可并行；质量门禁注入（4.2）与 Bug Extension 验证（5.1）可并行。并行编排是执行建议而非硬性约束，串行执行不会导致失败，仅耗时增加。预计节省约 25-35% 初始化时间。
 
 ## Git 推送规范

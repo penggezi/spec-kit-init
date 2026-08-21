@@ -27,6 +27,8 @@ description: |
 4. **代码质量门禁初始化** → `/speckit-quality` skill + implement 质量检查注入
 5. **Bug 修复工作流** → 自动安装官方 Bug Extension（`/speckit.bug.assess→fix→test`）
 
+> **可选增强**：初始化时询问用户是否链接外部知识库（本地文档目录）。链接后注入 `{AGENT_FILE}`，AI 开发时按需参考——让 SDD 流程不局限于项目内已有信息。
+
 **重要**：当本 skill 触发时，不要再调用内置 `/init`，本 skill 已包含其全部功能。
 
 ## 渐进式加载
@@ -121,6 +123,7 @@ SDD（规格驱动开发）翻转传统开发流程：**规格是核心产出物
 15. `/speckit-implement` 中 `SPEC-KIT-INIT:IMPLEMENT-QUALITY` 标记是否存在
 16. `/speckit.bug.assess` 中 `SPEC-KIT-INIT:BUG-ASSESS-LESSONS` 标记是否存在（若 Bug Extension 存在）
 17. `/speckit.bug.test` 中 `SPEC-KIT-INIT:BUG-TEST-QUALITY-RETRO` 标记是否存在（若 Bug Extension 存在）
+18. `{AGENT_FILE}` 中 `SPEC-KIT-INIT:KB-REFERENCE` 标记是否存在（若 `.specify/config.yml` 的 `knowledge_base.enabled=true`，Schema 见 `references/injection-texts.md` 第 9.3 节）
 
 #### 0.2 交叉验证与状态判定
 
@@ -135,6 +138,8 @@ SDD（规格驱动开发）翻转传统开发流程：**规格是核心产出物
 | 完整初始化 | A、B、C 全部就位，且无配置与实际不一致 | 告知用户已完成初始化，询问是否升级（0.4）或重建（0.4.2） |
 | 旧式完整 SDD 段 | `{AGENT_FILE}` 有 `<!-- SDD:START -->` 且为完整版 + `.specify/sdd-workflow.md` 不存在 | 先执行阶段 0.5 自动迁移，迁移完成后按其余检查项继续判断 |
 
+> **外部知识库为可选组件**：`knowledge_base.enabled=false` 或未配置时，检查项 18 视为「跳过」，不判缺失；配置为 `true` 但 `{AGENT_FILE}` 无 `SPEC-KIT-INIT:KB-REFERENCE` 标记时，按「被覆盖/缺失」处理，走 0.3 补齐。
+
 #### 0.3 补齐模式（repair）
 
 > 目标：只补齐缺失或恢复被覆盖的组件，**不覆盖用户已有的任何内容**。
@@ -148,6 +153,7 @@ SDD（规格驱动开发）翻转传统开发流程：**规格是核心产出物
 - speckit-implement 缺少两项注入 → 先执行 3.4（经验注入）再执行 4.2（质量门禁注入），因为 4.2 需要知道 3.4 的注入路径
 - 配置有记录但实际无标记（被覆盖）→ 仅重新注入对应项，不重建其他组件
 - 只有 `lessons-index.md` 缺失 → 从现有 `lessons.md` 正文重建索引（见 3.1 边界处理），不覆盖正文
+- `knowledge_base.enabled=true` 但 `{AGENT_FILE}` 无 `SPEC-KIT-INIT:KB-REFERENCE` 标记 → 仅重新注入外部知识库段（阶段 2 的 KB 注入步骤），不重复询问路径（沿用 config.yml 中已记录的路径）
 
 **修补失败路径**：注入被覆盖且锚点匹配率仍低时，该注入标记为 `overwritten`，走兜底追加并提示人工确认位置。
 
@@ -263,6 +269,26 @@ AGENT_SPECIFY   = specify --integration 参数（claude/codex/N/A）
 
 > 选择「其他」时，需逐一确认以上五项配置的取值。
 
+#### 1.2.2 询问外部知识库（可选）
+
+> **设计意图**：外部知识库是项目外的本地文档目录（如团队 wiki、历史项目资料）。链接后 AI 在开发时按需参考，让 SDD 流程不局限于项目内已有信息。这是**可选增强**，不配置也不影响初始化。
+
+询问用户：
+
+```
+是否链接外部知识库（本地文档目录）供 AI 开发时按需参考？(y/n)
+- 是 → 请输入知识库目录路径（支持多个，用空格分隔；建议使用绝对路径）
+- 否 → 跳过，后续可在 {AGENT_FILE} 中手动添加
+```
+
+**路径校验**：对每个路径执行 `test -d "{路径}"`，存在且为目录才接受；不存在的路径列出并重新询问（Windows 路径在 Git Bash 下可用正斜杠或转义形式）。
+
+选择后记录变量：
+- `KB_ENABLED` = true / false
+- `KB_PATHS` = 通过校验的绝对路径列表（如 `D:/team-wiki D:/proj-docs`）
+
+知识库是**只读外部资源**：后续任何阶段只读取、绝不写入或修改知识库目录。
+
 #### 1.3 确认执行
 
 在进入实际执行前，展示摘要并确认：
@@ -273,11 +299,12 @@ AGENT_SPECIFY   = specify --integration 参数（claude/codex/N/A）
 - 配置经验沉淀机制（/retro + lessons.md）
 - 安装代码质量门禁（/speckit-quality）
 - 自动初始化基本宪章（后续可通过 /speckit-constitution 修订）
+{若 KB_ENABLED=true 追加：- 链接外部知识库（{KB_PATHS}），AI 开发时按需参考}
 
 确认继续？(y/n)
 ```
 
-如项目已有 `{AGENT_FILE}` 且会被修改，额外提示「将修改已有的 {AGENT_FILE}，原内容保留不变」。详细信息在初始化完成后（阶段 6）展示。
+如 `KB_ENABLED=true`，在摘要中追加外部知识库行，并提示「知识库为只读参考，不会被修改」。如项目已有 `{AGENT_FILE}` 且会被修改，额外提示「将修改已有的 {AGENT_FILE}，原内容保留不变」。详细信息在初始化完成后（阶段 6）展示。
 
 #### 1.4 代码库分析（空目录跳过）
 
@@ -389,18 +416,19 @@ Constitution 是 SDD 的最高准则。初始化时自动写入一份基本宪�
 
 读取 `assets/agent-instructions.md` 获取注入模板。目标文件为阶段 1.2 选定的 `{AGENT_FILE}`。本阶段产出两份文件：
 
-1. **`{AGENT_FILE}`** — 注入「经验库优先」段 + **精简** SDD 段落（命令速查表 + `.specify/sdd-workflow.md` 指针）
+1. **`{AGENT_FILE}`** — 注入「经验库优先」段 + 外部知识库段（若启用）+ **精简** SDD 段落（命令速查表 + `.specify/sdd-workflow.md` 指针）
 2. **`.specify/sdd-workflow.md`** — 完整 SDD 工作流文档（读取 `assets/sdd-workflow-doc.md`，替换其中的 `{AGENT_FILE}` / `{AGENT_NAME}` / `{AGENT_SKILL_DIR}` 变量后写入；已存在且非空则跳过，不覆盖）
 
 `{AGENT_FILE}` 的合并规则：
 
 - 有 `<!-- SDD:START -->` 标记 → 只替换标记间内容，保留其余
 - 无标记，有文件 → 末尾追加标记包裹的精简 SDD 段落
-- 无文件 → 新建（代码库文档 + 经验库优先段 + 精简 SDD 段）
+- 无文件 → 新建（代码库文档 + 经验库优先段 + 外部知识库段（若启用）+ 精简 SDD 段）
 
 关键点：
 
 - **必须在** **`{AGENT_FILE}`** **顶部注入「经验库优先」段**：在 `{AGENT_TITLE}` 标题行之后、第一个 `##` 节之前，插入模板第 2 节内容。带 YAML frontmatter 的目标文件（如 Cursor 的 `.mdc`）先跳过 frontmatter，在 `---` 结束之后、一级标题之后插入
+- 若 `KB_ENABLED=true`，在「经验库优先」段之后、精简 SDD 段之前，插入「外部知识库」段（模板见 `assets/agent-instructions.md` 第 2.5 节）：将 `{KB_PATHS}` 替换为实际路径列表（**每个路径一行**，只替换占位符，不引入模板注解文字）。注入成功后记录 `spec_kit_init.injections.knowledge_base_reference`（`status: applied`，Schema 见 `references/injection-texts.md` 第 9.3 节）
 - 精简 SDD 段落使用模板第 1 节内容（只含命令速查表 + 指针，**不**含完整命令说明）
 - 完整工作流文档写入 `.specify/sdd-workflow.md`（读取 `{SKILL_ROOT}/assets/sdd-workflow-doc.md`），确保包含 `/retro` 行和「经验沉淀（Retro）」章节
 - 写入后确认两份文件均存在且非空
@@ -678,6 +706,7 @@ Bug Extension 的三步流程本身已完整，在此之上接入本项目已有
 读取 `references/report-template.md` 获取完整汇报模板。按模板中的「动态编号规则」，根据实际执行情况生成编号（跳过未执行的步骤，不留空位）。需要替换的变量：
 - `{AGENT_FILE}` / `{AGENT_NAME}` / `{AGENT_SKILL_DIR}` — 来自阶段 1.2
 - `{BUG_EXTENSION_INSTALLED}` — 来自阶段 5.1，若为 `false` 则将 `[核心-Bug修复]` 项替换为失败原因和手动重试命令 `specify extension add bug --force`，并移除 `[可选-Bug重试]`
+- `{KB_ENABLED}` / `{KB_PATHS}` — 来自阶段 1.2.2，若 `KB_ENABLED=false` 则移除 `[可选-知识库]` 项
 - `[核心-宪章]`：若 1.6 跳过（Copilot/Cursor 或已有宪章），将此项替换为「宪章已存在，跳过自动初始化」
 
 > 以上说明已固化到 `.specify/sdd-workflow.md`（完整工作流指南）与 `{AGENT_FILE}` 的 SDD 精简段落（命令速查 + 指针）中，后续每次会话均可查阅。
@@ -691,6 +720,7 @@ Bug Extension 的三步流程本身已完整，在此之上接入本项目已有
 - 经验沉淀机制（/retro + lessons.md + speckit 改造）是初始化的一部分，不要跳过
 - 代码质量门禁（/speckit-quality + implement 质量检查）是初始化的一部分，不要跳过（仅 Claude Code / Codex 平台）
 - Bug 修复工作流（阶段 5）在 Claude Code / Codex 平台默认安装官方 Bug Extension；安装失败时必须报告原因和重试命令，不得静默跳过
+- 外部知识库目录为**只读外部资源**：任何阶段不得写入或修改知识库目录内的文件；如检测到知识库路径不可访问，仅提示用户检查路径，不阻塞初始化
 - **错误处理原则**：未特别说明的步骤，失败即终止并报告原因，不得静默继续。关键步骤的失败处理已在各阶段中单独标注。本 Skill 采用三级错误处理策略：
 
 | 级别 | 定义 | 处理方式 | 典型场景 |

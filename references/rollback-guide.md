@@ -50,6 +50,7 @@ preexisting:    # 初始化前已存在、本次未触碰的文件（绝不删�
 | `specify init` 失败 | **不要假设无副作用**。重新扫描初始化前后的路径差异：只把本次新建的文件记入 `created` 删除；已存在且被修改的文件从备份恢复；其余不动 |
 | `specify init` 已完成但后续步骤失败 | `.specify/` 中本次创建的结构保留，可按事务清单逐项回滚本次修改；`{AGENT_FILE}` 中本次注入的 `<!-- SDD:START/END -->` 段删除 |
 | 阶段 0.5 迁移中途失败（已抽取 `.specify/sdd-workflow.md` 但未替换精简段） | 删除本次生成的 `.specify/sdd-workflow.md`，`{AGENT_FILE}` 中的完整 SDD 段保持不变（若此前已备份则从备份恢复） |
+| 阶段 2 外部知识库注入后失败 | 删除 `{AGENT_FILE}` 中 `<!-- SPEC-KIT-INIT:KB-REFERENCE:START -->` 至 `<!-- SPEC-KIT-INIT:KB-REFERENCE:END -->` 之间的注入内容；外部知识库目录本身是只读外部资源，不在此事务范围内 |
 | 阶段 3/4/5 注入后失败 | 删除目标文件中 `<!-- SPEC-KIT-INIT:...:START -->` 至 `<!-- SPEC-KIT-INIT:...:END -->` 之间的注入内容（兜底路径同时删除 `<!-- ⚠ 自动追加...-->` 标记块）；若文件整体被修改过，从 `modified` 的备份恢复 |
 | 正则匹配成功路径的注入需要回滚 | 同样通过 `SPEC-KIT-INIT` 标记删除——**正常注入与兜底注入使用相同标记**，不依赖 `⚠ 自动追加` 标记 |
 | Bug Extension 步骤（阶段 5）已安装但后续失败 | `.specify/extensions/bug/` 为本次新建时，运行 `specify extension remove bug` 清理；`.specify/bugs/` 目录为空时可删除（非本次创建则保留） |
@@ -79,7 +80,7 @@ preexisting:    # 初始化前已存在、本次未触碰的文件（绝不删�
 2. 展示准确清单：将删除的文件（可证明由本 Skill 创建）、将恢复的文件（从备份）、无法确认来源的文件
 3. 对无法确认来源的文件（如无托管标记的 retro/SKILL.md），单独标出并询问用户
 4. 用户明确确认后，只删除有据可依的内容；无 `SPEC-KIT-INIT-MANAGED` 标记的用户自建文件不删除
-5. 从 `{AGENT_FILE}` 移除 `<!-- SDD:START -->` 至 `<!-- SDD:END -->` 段与「经验库优先」段
+5. 从 `{AGENT_FILE}` 移除 `<!-- SDD:START -->` 至 `<!-- SDD:END -->` 段、「经验库优先」段与「外部知识库」段（含 `SPEC-KIT-INIT:KB-REFERENCE` 标记块）
 6. 清理 `.specify/.spec-kit-init/` 事务目录
 
 **禁止**使用以下形式的通配清理，除非用户确认清单后逐项执行：

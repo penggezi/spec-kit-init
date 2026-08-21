@@ -8,6 +8,8 @@
 - **代码质量门禁初始化** → 质量检查命令 + implement 质量门禁注入
 - **Bug 修复工作流** → 自动安装官方 Spec-Kit Bug Extension，接入经验库与质量门禁
 
+> **可选增强**：初始化时询问是否链接外部知识库（本地文档目录），链接后注入 `{AGENT_FILE}`，AI 开发时按需参考。
+
 ---
 
 ## 设计理念
@@ -123,7 +125,7 @@ spec-kit-init/
 |------|------|-----------|
 | `SKILL.md` | **主入口**，定义 7 个阶段的完整流程（含幂等检查） | 每次会话必读 |
 | `scripts/ensure-specify.sh` | 在阶段 1.5 被调用，安装 specify-cli | 仅在 Claude Code / Codex 平台执行 |
-| `assets/agent-instructions.md` | 提供注入段落模板（精简 SDD 段 + 经验库优先段 + 完整文档写入说明） | 阶段 2 按需读取 |
+| `assets/agent-instructions.md` | 提供注入段落模板（精简 SDD 段 + 经验库优先段 + 外部知识库段 + 完整文档写入说明） | 阶段 2 按需读取 |
 | `assets/sdd-workflow-doc.md` | 完整 SDD 工作流文档模板，写入目标项目 `.specify/sdd-workflow.md` | 阶段 2 按需读取 |
 | `references/report-template.md` | 阶段 6 汇报模板，初始化完成后展示的汇总信息 | 阶段 6 按需读取 |
 | `references/parallel-orchestration.md` | 阶段 3-5 并行编排方案（依赖图 + 每波说明） | 阶段 3-5 执行时按需读取 |
@@ -148,6 +150,7 @@ spec-kit-init/
 ```
 1.1 环境检测 ──→ Python 3.11+ / uv / Git
 1.2 选择 AI 编码工具 ──→ 优先自动检测已有指令文件，未命中再询问用户
+1.2.2 询问外部知识库（可选）──→ 是否链接本地文档目录供 AI 按需参考（支持多路径，校验存在且为目录）
 1.3 确认执行 ──→ 展示即将执行的操作摘要，一句话确认
 1.4 代码库分析 ──→ 已有项目时分析架构/技术栈/构建命令（空目录跳过，与 1.5 并行）
 1.5 specify init ──→ 安装 SDD 工作流框架 + Bug Extension（仅 Claude Code / Codex，与 1.4 并行）
@@ -161,8 +164,9 @@ spec-kit-init/
 
 产出两份文件：
 
-- **`{AGENT_FILE}`**：注入「经验库优先」段 + **精简** SDD 段落
+- **`{AGENT_FILE}`**：注入「经验库优先」段 + 外部知识库段（若启用）+ **精简** SDD 段落
   - **经验库优先段**：注入到标题行之后、第一个 `##` 节之前，确保 AI 每次会话先读经验库
+  - **外部知识库段**：链接本地文档目录时注入，紧随经验库优先段之后，指示 AI 按需检索（不整体读取）
   - **精简 SDD 段落**：用 `<!-- SDD:START -->` / `<!-- SDD:END -->` 标记包裹，只含命令速查表 + `.specify/sdd-workflow.md` 指针
   - 智能合并：已有标记 → 替换内容；无标记 → 末尾追加；无文件 → 新建
 - **`.specify/sdd-workflow.md`**：完整 SDD 工作流文档（写入 `assets/sdd-workflow-doc.md` 内容），SDD 任务时按需读取
@@ -351,7 +355,7 @@ SKILL.md 本身包含全部流程描述，`references/` 和 `assets/` 下的文�
 - 提到"初始化项目"、"初始化 SDD 规范"、"用 spec-kit 初始化"
 - 在新项目或空目录中开始工作时的自然语言请求
 
-Skill 触发后，按 7 个阶段依次执行（含阶段 0 幂等检查），中间会在关键决策点（AI 工具选择、Constitution 初始化）与用户交互确认。Bug Extension 会在 Claude Code / Codex 项目中自动安装。
+Skill 触发后，按 7 个阶段依次执行（含阶段 0 幂等检查），中间会在关键决策点（AI 工具选择、外部知识库链接、Constitution 初始化）与用户交互确认。Bug Extension 会在 Claude Code / Codex 项目中自动安装。
 
 ---
 

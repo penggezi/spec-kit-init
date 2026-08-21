@@ -291,6 +291,7 @@ Judge the outcome, Write the verification report, verification report, Mark the 
 | `<!-- SPEC-KIT-INIT:IMPLEMENT-QUALITY:START/END -->` | `/speckit-implement` 质量门禁 | 4.2 |
 | `<!-- SPEC-KIT-INIT:BUG-ASSESS-LESSONS:START/END -->` | `/speckit.bug.assess` 经验库读取 | 5.2.1 |
 | `<!-- SPEC-KIT-INIT:BUG-TEST-QUALITY-RETRO:START/END -->` | `/speckit.bug.test` 质量门禁与复盘联动 | 5.2.2 |
+| `<!-- SPEC-KIT-INIT:KB-REFERENCE:START/END -->` | `{AGENT_FILE}` 外部知识库参考 | 阶段 2 |
 
 规则：
 
@@ -306,7 +307,7 @@ Judge the outcome, Write the verification report, verification report, Mark the 
 <!-- SPEC-KIT-INIT-MANAGED
 component: retro|speckit-quality
 template-version: 1
-source-version: 0.10.0
+source-version: 0.11.0
 -->
 ```
 
@@ -320,9 +321,13 @@ source-version: 0.10.0
 
 ```yaml
 spec_kit_init:
-  version: "0.10.0"                    # 记录写入时本 Skill 的版本
+  version: "0.11.0"                    # 记录写入时本 Skill 的版本
   initialized_at: "2026-08-12"         # 首次初始化的日期
   platform: "claude"                   # 1.2 选择的平台：claude / codex / copilot / cursor / custom
+  knowledge_base:                      # 外部知识库（可选，阶段 1.2.2 配置）
+    enabled: true
+    paths:
+      - "D:/team-wiki"
   assets:                              # 部署的完整 skill 文件版本记录（P0-6 使用）
     retro:
       template_version: 1
@@ -332,6 +337,10 @@ spec_kit_init:
       content_hash: "<sha256>"
   injections:                          # 每处注入的状态记录
     agent_instructions:
+      status: applied
+      mode: anchored
+      template_version: 1
+    knowledge_base_reference:
       status: applied
       mode: anchored
       template_version: 1
