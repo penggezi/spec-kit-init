@@ -30,9 +30,8 @@
    → 安装 /retro 命令 + 创建 lessons.md 经验库
    → 改造 /speckit-plan 和 /speckit-implement → 每次写代码前自动参考经验，写完后自动询问复盘
 
-[核心-质量门禁] 代码质量门禁初始化 ── 安装质量检查命令 + 注入 implement 质量门禁
+[核心-质量门禁] 代码质量门禁初始化 ── 安装质量检查命令
    → 安装 /speckit-quality 命令，随时手动运行质量检查
-   → 改造 /speckit-implement → 实现完成后自动执行质量门禁，通过后方提示复盘
 
 [核心-Bug修复] Bug 修复工作流初始化 ── 安装官方 Bug Extension
    → 提供 /speckit.bug.assess → fix → test 三步缺陷修复流程
@@ -61,7 +60,7 @@
   /speckit-specify     → 编写功能规格（WHAT）
   /speckit-plan        → 制定技术方案（HOW）
   /speckit-tasks       → 拆解执行任务
-  /speckit-implement   → 按任务实现编码（完成后执行质量门禁，通过后方提示复盘）
+  /speckit-implement   → 按任务实现编码（完成后询问复盘）
   /speckit-quality     → 代码质量检查（自动检测技术栈并运行静态分析）
   /retro               → 经验复盘沉淀
 
@@ -87,7 +86,7 @@
   .specify/extensions/bug/      ← Bug Extension 命令
   .specify/bugs/                ← 缺陷评估/修复/验证产物
 
-经验闭环：实现完成 → 质量门禁 → 复盘提示 → /retro 沉淀 → lessons.md 入库
+经验闭环：实现完成 → 复盘提示 → /retro 沉淀 → lessons.md 入库
            → 下次会话 {AGENT_FILE} 强制读 lessons.md → 经验被自动参考
 ```
 

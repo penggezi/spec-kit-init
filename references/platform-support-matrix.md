@@ -39,9 +39,7 @@ speckit-quality skill (4.1)             ← 独立，无依赖
 
 ```
 speckit-plan 注入 (3.3)                 ← 依赖：speckit-plan SKILL.md 存在
-speckit-implement 经验注入 (3.4)        ← 依赖：speckit-implement SKILL.md 存在
-speckit-implement 质量门禁注入 (4.2)    ← 依赖：3.4 注入状态已知 + speckit-implement SKILL.md 存在
-                                         → 4.2 需要知道 3.4 走的是正则匹配还是兜底追加路径
+speckit-implement 经验/复盘注入 (3.4)   ← 依赖：speckit-implement SKILL.md 存在
 Bug Extension 验证 (5.1)               ← 依赖：1.5 specify extension add bug 执行结果
 Bug Extension 注入 (5.2)               ← 依赖：5.1 BUG_EXTENSION_INSTALLED=true
 ```
@@ -50,7 +48,7 @@ Bug Extension 注入 (5.2)               ← 依赖：5.1 BUG_EXTENSION_INSTALLE
 
 ```
 经验闭环验证 (3.5)                       ← 依赖：3.1-3.4 完成
-质量门禁验证 (4.3)                       ← 依赖：4.1-4.2 完成
+质量门禁验证 (4.2)                       ← 依赖：4.1 完成
 ```
 
 ---
@@ -65,10 +63,8 @@ Bug Extension 注入 (5.2)               ← 依赖：5.1 BUG_EXTENSION_INSTALLE
 | 无 speckit-quality skill | 执行 4.1 | 无 |
 | 无 lessons.md / 无 lessons-index.md | 执行 3.1（逐文件处理；仅索引缺失时从正文重建，不覆盖正文） | 无 |
 | speckit-plan 有但未注入 lessons（无 `SPEC-KIT-INIT:PLAN-LESSONS` 标记） | 执行 3.3 | speckit-plan SKILL.md 存在 |
-| speckit-implement 有但未注入（经验，无 `IMPLEMENT-LESSONS`/`IMPLEMENT-RETRO` 标记）| 执行 3.4 | speckit-implement SKILL.md 存在 |
-| speckit-implement 有但未注入（质量，无 `IMPLEMENT-QUALITY` 标记）| 执行 4.2 | 3.4 注入状态已知 |
-| speckit-implement 缺少两项注入 | 先 3.4 → 后 4.2 | 顺序依赖 |
-| 配置有记录但实际无标记（注入被 spec-kit 升级覆盖） | 仅重新注入对应项（3.3/3.4/4.2/5.2.x） | 对应文件存在 |
+| speckit-implement 有但未注入（经验/复盘，无 `IMPLEMENT-LESSONS`/`IMPLEMENT-RETRO` 标记）| 执行 3.4 | speckit-implement SKILL.md 存在 |
+| 配置有记录但实际无标记（注入被 spec-kit 升级覆盖） | 仅重新注入对应项（3.3/3.4/5.2.x） | 对应文件存在 |
 | knowledge_base 已配置但 `{AGENT_FILE}` 无 `KB-REFERENCE` 标记 | 仅重新注入外部知识库段（阶段 2 KB 注入步骤，沿用 config.yml 记录的路径） | `{AGENT_FILE}` 存在或即将创建 |
 | spec-kit 有但 Bug Extension 缺失 | 执行 1.5 的 ext add → 5.1 → 5.2 | `{AGENT_SPECIFY}` 有值 |
 

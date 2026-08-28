@@ -8,17 +8,13 @@
 第一波（文件创建并行）：
   3.1 创建经验文件 → 3.2 安装 /retro（含 3.2.1）→ 4.1 安装 /speckit-quality
 
-第二波（speckit 注入并行）：
-  3.3 改造 /speckit-plan  ← 同时 →  3.4 改造 /speckit-implement
-  （修改不同文件，无冲突）
+第二波（speckit 注入与验证并行）：
+  3.3 改造 /speckit-plan  ← 同时 →  3.4 改造 /speckit-implement  ← 同时 →  5.1 验证 Bug Extension
+  （3.3/3.4 修改不同文件，无冲突；5.1 只读验证，依赖阶段 1.5 的安装结果）
 
-第三波（质量门禁注入 || Bug Extension 验证）：
-  4.2 改造 /speckit-implement（质量门禁）  ← 同时 →  5.1 验证 Bug Extension
-  （4.2 依赖 3.4 的注入状态，5.1 依赖 1.5 的安装结果，两者之间无依赖）
-  → 然后顺序执行 5.2（依赖 5.1）→ 5.3
-
-收尾：
-  3.5 验证经验闭环 → 4.3 验证质量门禁
+收尾（验证 + Bug 注入）：
+  3.5 验证经验闭环 → 4.2 验证质量门禁（可并行）
+  5.2 注入 Bug 增强（依赖 5.1）→ 5.3 复杂度升级规则
 ```
 
 ## 详细说明
@@ -33,29 +29,21 @@
 
 建议三个步骤同时执行，或者顺序执行均可——无依赖关系。
 
-### 第二波：speckit 并行注入
+### 第二波：speckit 注入 + Bug Extension 验证并行
 
 3.3（改造 `/speckit-plan`）和 3.4（改造 `/speckit-implement`）修改的是**不同的物理文件**，不存在冲突：
 
 - 3.3 → `{AGENT_SKILL_DIR}/speckit-plan/SKILL.md`
 - 3.4 → `{AGENT_SKILL_DIR}/speckit-implement/SKILL.md`
 
-可同时执行。
+5.1（验证 Bug Extension）是只读验证，只依赖阶段 1.5 的 `specify extension add bug` 安装结果，与上述注入互不干扰，可同时执行。
 
-### 第三波：质量门禁注入 + Bug Extension 验证
+### 收尾：验证 + Bug 注入
 
-**4.2（改造 speckit-implement 注入质量门禁）** 和 **5.1（验证 Bug Extension）** 互不依赖：
+3.5（验证经验闭环）和 4.2（验证质量门禁）是两个独立的验证步骤，可同时执行。完成后顺序执行：
 
-- 4.2 依赖 3.4 的注入结果（需要知道 speckit-implement 是否走兜底路径）
-- 5.1 依赖阶段 1.5 的 `specify extension add bug` 安装结果
-
-两者可以同时执行。完成后顺序执行：
 - 5.2（依赖 5.1 的安装状态变量）
 - 5.3（复杂度升级规则，无额外依赖）
-
-### 收尾验证
-
-3.5 和 4.3 是两个独立的验证步骤，可同时执行。
 
 ## 重要说明
 

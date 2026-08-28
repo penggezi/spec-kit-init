@@ -24,7 +24,7 @@ description: |
 1. **代码库分析**（等同于 `/init`）→ 项目指令文件上半部分
 2. **SDD 工作流搭建** → 项目指令文件下半部分（`<!-- SDD:START/END -->` 标记包裹）
 3. **经验沉淀机制初始化** → `/retro` skill + `lessons.md` + 经验自动参考链路
-4. **代码质量门禁初始化** → `/speckit-quality` skill + implement 质量检查注入
+4. **代码质量门禁初始化** → `/speckit-quality` skill（手动质量检查命令）
 5. **Bug 修复工作流** → 自动安装官方 Bug Extension（`/speckit.bug.assess→fix→test`）
 
 > **可选增强**：初始化时询问用户是否链接外部知识库（本地文档目录）。链接后注入 `{AGENT_FILE}`，AI 开发时按需参考——让 SDD 流程不局限于项目内已有信息。
@@ -120,10 +120,9 @@ SDD（规格驱动开发）翻转传统开发流程：**规格是核心产出物
 12. `/speckit-plan` 中 `SPEC-KIT-INIT:PLAN-LESSONS` 标记是否存在
 13. `/speckit-implement` 中 `SPEC-KIT-INIT:IMPLEMENT-LESSONS` 标记是否存在
 14. `/speckit-implement` 中 `SPEC-KIT-INIT:IMPLEMENT-RETRO` 标记是否存在
-15. `/speckit-implement` 中 `SPEC-KIT-INIT:IMPLEMENT-QUALITY` 标记是否存在
-16. `/speckit.bug.assess` 中 `SPEC-KIT-INIT:BUG-ASSESS-LESSONS` 标记是否存在（若 Bug Extension 存在）
-17. `/speckit.bug.test` 中 `SPEC-KIT-INIT:BUG-TEST-QUALITY-RETRO` 标记是否存在（若 Bug Extension 存在）
-18. `{AGENT_FILE}` 中 `SPEC-KIT-INIT:KB-REFERENCE` 标记是否存在（若 `.specify/config.yml` 的 `knowledge_base.enabled=true`，Schema 见 `references/injection-texts.md` 第 9.3 节）
+15. `/speckit.bug.assess` 中 `SPEC-KIT-INIT:BUG-ASSESS-LESSONS` 标记是否存在（若 Bug Extension 存在）
+16. `/speckit.bug.test` 中 `SPEC-KIT-INIT:BUG-TEST-QUALITY-RETRO` 标记是否存在（若 Bug Extension 存在）
+17. `{AGENT_FILE}` 中 `SPEC-KIT-INIT:KB-REFERENCE` 标记是否存在（若 `.specify/config.yml` 的 `knowledge_base.enabled=true`，Schema 见 `references/injection-texts.md` 第 9.3 节）
 
 #### 0.2 交叉验证与状态判定
 
@@ -150,7 +149,7 @@ SDD（规格驱动开发）翻转传统开发流程：**规格是核心产出物
 - 已有 `.specify/` 和 speckit-* 命令 → 跳过阶段 1.5
 - 缺少 retro skill → 仅执行阶段 3.2（含 3.2.1）
 - 缺少 quality gate → 仅执行阶段 4
-- speckit-implement 缺少两项注入 → 先执行 3.4（经验注入）再执行 4.2（质量门禁注入），因为 4.2 需要知道 3.4 的注入路径
+- speckit-implement 缺少经验/复盘注入 → 执行 3.4
 - 配置有记录但实际无标记（被覆盖）→ 仅重新注入对应项，不重建其他组件
 - 只有 `lessons-index.md` 缺失 → 从现有 `lessons.md` 正文重建索引（见 3.1 边界处理），不覆盖正文
 - `knowledge_base.enabled=true` 但 `{AGENT_FILE}` 无 `SPEC-KIT-INIT:KB-REFERENCE` 标记 → 仅重新注入外部知识库段（阶段 2 的 KB 注入步骤），不重复询问路径（沿用 config.yml 中已记录的路径）
@@ -365,7 +364,7 @@ echo "" | PYTHONIOENCODING=utf-8 specify init --here --integration {AGENT_SPECIF
 **版本兼容性检查**：`specify init` 成功后，执行 `specify --version` 获取版本号。与本 Skill 的已知兼容版本列表（见 `references/injection-texts.md` 锚点定义节）比对：
 
 - 版本匹配 → 正常继续
-- 版本不匹配 → 输出警告「spec-kit 版本 {当前版本} 可能与本 Skill 注入锚点不完全兼容，建议关注后续阶段的注入结果」，但**继续执行**（因为 spec-kit 的变更日志未知，无法预先断定不兼容）。注入阶段（3/4/5）的兼容性预检会进一步判断
+- 版本不匹配 → 输出警告「spec-kit 版本 {当前版本} 可能与本 Skill 注入锚点不完全兼容，建议关注后续阶段的注入结果」，但**继续执行**（因为 spec-kit 的变更日志未知，无法预先断定不兼容）。注入阶段（3/5）的兼容性预检会进一步判断
 
 *speckit-git-* 清理\*：`specify init` 可能仍会生成 `speckit-git-*` 相关 skill（git commit/tag/rebase 等工作流扩展），这些命令不在本 Skill 核心流程范围内。**清理前先确认**：
 
@@ -438,10 +437,9 @@ Constitution 是 SDD 的最高准则。初始化时自动写入一份基本宪�
 
 阶段 3（经验沉淀）、阶段 4（质量门禁）、阶段 5（Bug 修复）中有多个步骤互不依赖。详细编排方案（含依赖图和每波说明）见 `references/parallel-orchestration.md`，以下为摘要：
 
-- **第一波**：3.1 创建经验文件 ⚡ 3.2 安装 /retro ⚡ 4.1 安装 /speckit-quality（三个文件创建操作，互不依赖）
-- **第二波**：3.3 改造 specit-plan ⚡ 3.4 改造 specit-implement（修改不同文件，无冲突）
-- **第三波**：4.2 质量门禁注入 ⚡ 5.1 验证 Bug Extension（互不依赖），然后顺序执行 5.2 → 5.3
-- **收尾**：3.5 验证经验闭环 + 4.3 验证质量门禁
+- **第一波**：3.1 创建经验文件 ⚡ 3.2 安装 /retro（含 3.2.1）⚡ 4.1 安装 /speckit-quality（三个文件创建操作，互不依赖）
+- **第二波**：3.3 改造 specit-plan ⚡ 3.4 改造 specit-implement ⚡ 5.1 验证 Bug Extension（修改不同文件，无冲突；5.1 依赖 1.5 安装结果）
+- **收尾**：3.5 验证经验闭环 ⚡ 4.2 验证质量门禁，然后顺序执行 5.2（依赖 5.1）→ 5.3
 
 > 并行编排是执行建议，非硬性约束。串行执行不会导致失败或内容缺失，仅总耗时增加。
 
@@ -573,7 +571,7 @@ cp -r "{SKILL_ROOT}/assets/retro-references/." "{PROJECT_ROOT}/{AGENT_SKILL_DIR}
 
 > 此阶段仅在选择了 Claude Code 或 Codex 时执行（`{AGENT_SPECIFY}` 有值）。Copilot/Cursor 跳过。
 
-> **设计意图**：在 SDD 工作流中增加代码质量检查环节，确保”写完代码”到”复盘沉淀”之间有一个质量门禁。默认检查 Git 变更文件及有证据的直接影响范围，避免无关存量诊断污染上下文；只有改动风险、影响边界或用户要求触发时才升级至模块级或全量检查。具体范围算法、技术栈命令与结果归因以 `assets/quality-gate-skill.md` 为唯一事实来源。
+> **设计意图**：提供独立的 `/speckit-quality` 代码质量检查命令，供需要时手动执行（默认检查 Git 变更文件及有证据的直接影响范围，避免无关存量诊断污染上下文；只有改动风险、影响边界或用户要求触发时才升级至模块级或全量检查）。不再注入到 `/speckit-implement` 自动执行——实现完成后直接询问复盘，需要质量检查时手动调用。具体范围算法、技术栈命令与结果归因以 `assets/quality-gate-skill.md` 为唯一事实来源。
 
 #### 4.1 安装 /speckit-quality skill ⚡第一波
 
@@ -595,40 +593,15 @@ cp -r "{SKILL_ROOT}/assets/retro-references/." "{PROJECT_ROOT}/{AGENT_SKILL_DIR}
 {AGENT_SKILL_DIR}/speckit-quality/SKILL.md
 ```
 
-#### 4.2 改造 /speckit-implement（注入代码质量门禁）⚡第三波
-
-> 仅在 `{AGENT_SKILL_DIR}/speckit-implement/SKILL.md` 存在时执行（Copilot/Cursor 无 speckit 命令，自动跳过）。
-
-**前置检查**：确认阶段 3.4 的注入状态：
-- 如果阶段 3.4 走的是正则匹配成功路径（复盘提示步骤在正确位置）→ 正常执行以下兼容性预检和正则匹配
-- 如果阶段 3.4 走的是兜底追加路径（文件末尾有 `<!-- ⚠ 自动追加，请人工确认位置是否正确 -->` 标记）→ 跳过正则匹配，直接在阶段 3.4 的兜底追加块之后追加质量门禁兜底内容，合并两个兜底块为一个整体
-
-**兼容性预检**（仅当 3.4 正则成功时执行）：对照 `references/injection-texts.md` 第 8.2 节中「Completion validation」组锚点匹配目标文件：
-
-- 匹配率 ≥ 50% → 正常执行以下正则匹配
-- 匹配率 < 50% → **警告用户**，跳过正则匹配，使用第 4.2 节兜底追加文本
-
-读取 `{AGENT_SKILL_DIR}/speckit-implement/SKILL.md`。
-
-用语义正则定位到 “Completion validation” 或最后验证步骤之后、”Retrospective Prompt”/复盘提示步骤之前的区域，插入质量门禁步骤。
-
-读取 `references/injection-texts.md` 第 4 节获取注入文本。并将原后续步骤重新编号。
-
-**正则匹配失败时的兜底**：使用第 4.2 节兜底追加文本。追加后明确告知用户：”/speckit-implement 质量门禁注入未完全成功（模板结构已变化），已在文件末尾追加插桩，请人工确认并调整位置。”
-
-**注入成功后**，在 `.specify/config.yml` 中追加或更新 `spec_kit_init.injections.speckit_implement_quality` 字段（Schema 见 `references/injection-texts.md` 第 9.3 节），供阶段 0 交叉验证使用。
-
-#### 4.3 验证质量门禁完整性
+#### 4.2 验证质量门禁完整性
 
 确认以下链路连通：
 
 - [ ] `{AGENT_SKILL_DIR}/speckit-quality/SKILL.md` 存在
-- [ ] `/speckit-implement` 中存在代码质量门禁步骤（完成验证之后、复盘提示之前）
 - [ ] 空参数默认检查 Git 变更文件与有证据的直接影响范围，而不是全量扫描
 - [ ] 已暂存、未暂存、未追踪、删除和重命名文件都有明确处理；删除文件不作为 lint 参数
 - [ ] 范围规则定义了文件级、模块级、全量升级条件，以及无 Git/无初始提交的降级行为
 - [ ] 质量报告区分本次变更、关联存量和无法归因的问题
-- [ ] `/speckit-implement` 注入内容只调用 `/speckit-quality`，不重复维护技术栈命令映射
 
 ### 阶段 5：Bug 修复工作流初始化
 
@@ -636,7 +609,7 @@ cp -r "{SKILL_ROOT}/assets/retro-references/." "{PROJECT_ROOT}/{AGENT_SKILL_DIR}
 
 > 此步仅在 `{AGENT_SPECIFY}` 有值时执行（Claude Code / Codex）。Copilot/Cursor 跳过。
 
-#### 5.1 验证安装完整性 ⚡第三波
+#### 5.1 验证安装完整性 ⚡第二波
 
 确认以下命令可用：
 
@@ -718,7 +691,7 @@ Bug Extension 的三步流程本身已完整，在此之上接入本项目已有
 - 已有项目先展示变更摘要再执行：即将创建的文件清单（.specify/ 目录结构、{AGENT\_SKILL\_DIR}/speckit-*、{AGENT\_FILE} 注入段）、即将修改的现有文件（{AGENT\_FILE}、{AGENT\_SKILL\_DIR}/speckit-*）。用户确认后再执行
 - 不再调用内置 `/init`
 - 经验沉淀机制（/retro + lessons.md + speckit 改造）是初始化的一部分，不要跳过
-- 代码质量门禁（/speckit-quality + implement 质量检查）是初始化的一部分，不要跳过（仅 Claude Code / Codex 平台）
+- 代码质量门禁（/speckit-quality 命令）是初始化的一部分，不要跳过（仅 Claude Code / Codex 平台）
 - Bug 修复工作流（阶段 5）在 Claude Code / Codex 平台默认安装官方 Bug Extension；安装失败时必须报告原因和重试命令，不得静默跳过
 - 外部知识库目录为**只读外部资源**：任何阶段不得写入或修改知识库目录内的文件；如检测到知识库路径不可访问，仅提示用户检查路径，不阻塞初始化
 - **错误处理原则**：未特别说明的步骤，失败即终止并报告原因，不得静默继续。关键步骤的失败处理已在各阶段中单独标注。本 Skill 采用三级错误处理策略：

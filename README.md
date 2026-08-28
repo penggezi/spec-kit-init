@@ -5,7 +5,7 @@
 - **代码库分析** → 生成项目指令文件（CLAUDE.md / AGENTS.md 等）
 - **SDD 工作流搭建** → 规格驱动开发（Spec-Driven Development）全流程
 - **经验沉淀机制初始化** → 复盘 → 入库 → 自动复用的完整闭环
-- **代码质量门禁初始化** → 质量检查命令 + implement 质量门禁注入
+- **代码质量门禁初始化** → 安装 /speckit-quality 质量检查命令
 - **Bug 修复工作流** → 自动安装官方 Spec-Kit Bug Extension，接入经验库与质量门禁
 
 > **可选增强**：初始化时询问是否链接外部知识库（本地文档目录），链接后注入 `{AGENT_FILE}`，AI 开发时按需参考。
@@ -29,7 +29,7 @@
 本项目在标准 SDD 工作流之上叠加了**经验沉淀与自动复用机制**，解决"踩过的坑反复踩"的问题：
 
 ```
-实现完成 → 质量门禁 → 复盘提示 → /retro 沉淀 → lessons.md 入库
+实现完成 → 复盘提示 → /retro 沉淀 → lessons.md 入库
 → 下次会话 AI 强制读 lessons.md → 经验被自动参考
 ```
 
@@ -195,7 +195,7 @@ spec-kit-init/
 
 ### 阶段 4：代码质量门禁初始化
 
-在 SDD 工作流的基础上增加代码质量检查环节，确保“写完代码”到“复盘沉淀”之间有一个自动化质量门禁。默认只检查 Git 变更文件和有证据的直接影响范围，普通修改不会扫描整个仓库；涉及公共契约、依赖/配置、跨模块或影响边界不明时才自动升级到模块或全量检查：
+在 SDD 工作流中提供独立的代码质量检查命令 `/speckit-quality`，需要时可随时手动检查代码质量。默认只检查 Git 变更文件和有证据的直接影响范围，普通修改不会扫描整个仓库；涉及公共契约、依赖/配置、跨模块或影响边界不明时才自动升级到模块或全量检查：
 
 ```text
 Git 变更文件
@@ -209,9 +209,7 @@ Git 变更文件
 4.1 安装 /speckit-quality skill
      └── assets/quality-gate-skill.md → {AGENT_SKILL_DIR}/speckit-quality/SKILL.md
 
-4.2 改造 /speckit-implement ──→ 在完成验证和复盘提示之间插入代码质量门禁步骤
-
-4.3 验证质量门禁完整性 ──→ 确认文件存在、注入到位
+4.2 验证质量门禁完整性 ──→ 确认命令文件存在、行为符合定义
 ```
 
 ### 质量检查范围
@@ -324,7 +322,7 @@ SKILL.md 本身包含全部流程描述，`references/` 和 `assets/` 下的文�
 | `/speckit-specify` | 编写功能规格（WHAT + WHY） | `specs/<feature>/spec.md` |
 | `/speckit-plan` | 制定技术方案（HOW） | `specs/<feature>/plan.md` |
 | `/speckit-tasks` | 拆解可执行任务 | `specs/<feature>/tasks.md` |
-| `/speckit-implement` | 按任务编码实现（完成后执行质量门禁） | 实际代码 + 测试 |
+| `/speckit-implement` | 按任务编码实现（完成后询问复盘） | 实际代码 + 测试 |
 | `/speckit-quality` | 默认检查 Git 变更与有证据的直接影响范围；必要时升级模块/全量，并区分存量问题 | 质量检查报告 |
 | `/retro` | 经验复盘沉淀 | `lessons.md` / `constitution.md` 更新 |
 

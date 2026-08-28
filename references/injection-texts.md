@@ -92,47 +92,6 @@
 
 ---
 
-## 4. speckit-implement — 质量门禁（阶段 4.2）
-
-### 4.1 正则匹配成功时插入
-
-````
-<!-- SPEC-KIT-INIT:IMPLEMENT-QUALITY:START -->
-N. **代码质量门禁（Code Quality Gate）**：
-
-    在全部实现任务标记完成之后、复盘提示之前，调用 `/speckit-quality` 执行统一质量门禁。
-
-    a. **默认范围**：不传参数。`/speckit-quality` 自动收集 Git 中已暂存、未暂存和未追踪的变更文件，加入有证据的直接影响文件或测试；删除文件只用于影响分析，不直接传给静态分析工具。
-
-    b. **范围升级**：修改模块入口、公共导出/类型、模块配置、路由/注册表，或发生删除/重命名且引用不明时升级为模块级；根依赖/锁文件、构建或质量配置、数据库迁移、跨模块公共契约、无法可靠划定影响边界时升级为全量。`/speckit-quality --all` 可显式要求全量。
-
-    c. **结果归因**：报告必须区分本次变更问题、关联存量问题和无法归因问题。仅本次变更的 error，以及关键构建/类型/依赖失败，默认阻塞；未修改区域的存量问题只汇报，不要求顺带修复。
-
-    d. **评估结果**：
-       - ✅ 通过 → 继续到复盘提示
-       - ❌ 阻塞（本次变更有错误级问题）→ 展示摘要 → 询问"是否自动修复阻塞问题" → 同意则只修复本次问题 → 用相同范围复检 → 通过后继续；拒绝则标记"质量门禁未通过"后继续
-       - ⚠️ 警告（非阻塞、关联存量或可接受跳过）→ 展示摘要 → 不自动修复 → 将模式特征记录为复盘候选素材
-       - ℹ️ 降级（无 Git/无基线/工具无法文件级检查）→ 展示原因、实际范围和剩余风险；不得把降级结果说成增量检查已通过
-
-    e. **跳过条件**：用户可明确说"跳过质量检查"；连续 3 次阻塞且用户均选择不修复时不再重复提示。
-
-    f. **与复盘联动**：将重复警告、存量模式、范围升级或降级原因传递给复盘步骤。范围规则和技术栈命令均以 `/speckit-quality` 自身定义为准，不在本命令中维护第二套映射表。
-<!-- SPEC-KIT-INIT:IMPLEMENT-QUALITY:END -->
-````
-
-### 4.2 兜底追加
-
-````
-<!-- SPEC-KIT-INIT:IMPLEMENT-QUALITY:START -->
-<!-- ⚠ 自动追加，请人工确认位置是否正确 -->
-## ⚠ 质量门禁注入（由 spec-kit-init 追加）
-
-在全部实现任务标记完成之后、复盘提示之前，新增「代码质量门禁」步骤：调用 `/speckit-quality`，默认检查 Git 变更文件和有证据的直接影响范围；风险或范围不确定时升级模块/全量；区分本次变更、关联存量和无法归因的问题。
-<!-- SPEC-KIT-INIT:IMPLEMENT-QUALITY:END -->
-````
-
----
-
 ## 5. speckit-bug-assess（阶段 5.2.1）
 
 ### 5.1 正则匹配成功时插入
@@ -231,7 +190,7 @@ Load context, Load IMPL_PLAN, constitution.md, FEATURE_SPEC, Fill Constitution C
 
 > 匹配率 = 命中的锚点数 / 总锚点数（5 个）。匹配率 ≥ 60%（3/5）时正常注入；< 60% 时走兜底。
 
-### 8.2 speckit-implement 锚点（阶段 3.4 + 4.2）
+### 8.2 speckit-implement 锚点（阶段 3.4）
 
 用于定位「实现上下文读取」步骤的锚点：
 
@@ -288,7 +247,6 @@ Judge the outcome, Write the verification report, verification report, Mark the 
 | `<!-- SPEC-KIT-INIT:PLAN-LESSONS:START/END -->` | `/speckit-plan` 经验库读取 | 3.3 |
 | `<!-- SPEC-KIT-INIT:IMPLEMENT-LESSONS:START/END -->` | `/speckit-implement` 经验库读取 | 3.4 改动 A |
 | `<!-- SPEC-KIT-INIT:IMPLEMENT-RETRO:START/END -->` | `/speckit-implement` 复盘询问 | 3.4 改动 B |
-| `<!-- SPEC-KIT-INIT:IMPLEMENT-QUALITY:START/END -->` | `/speckit-implement` 质量门禁 | 4.2 |
 | `<!-- SPEC-KIT-INIT:BUG-ASSESS-LESSONS:START/END -->` | `/speckit.bug.assess` 经验库读取 | 5.2.1 |
 | `<!-- SPEC-KIT-INIT:BUG-TEST-QUALITY-RETRO:START/END -->` | `/speckit.bug.test` 质量门禁与复盘联动 | 5.2.2 |
 | `<!-- SPEC-KIT-INIT:KB-REFERENCE:START/END -->` | `{AGENT_FILE}` 外部知识库参考 | 阶段 2 |
@@ -353,10 +311,6 @@ spec_kit_init:
       mode: anchored
       template_version: 1
     speckit_implement_retro:
-      status: applied
-      mode: anchored
-      template_version: 1
-    speckit_implement_quality:
       status: applied
       mode: anchored
       template_version: 1

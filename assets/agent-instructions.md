@@ -23,7 +23,7 @@
 - `/speckit-specify` — 编写功能规格（只讲 WHAT/WHY）
 - `/speckit-plan` — 制定技术方案（HOW）
 - `/speckit-tasks` — 拆解任务清单
-- `/speckit-implement` — 执行实现（完成后自动执行质量门禁 + 询问复盘）
+- `/speckit-implement` — 执行实现（完成后询问复盘；需要时可手动调用 /speckit-quality 检查代码质量）
 - `/speckit-quality` — 代码质量检查（默认检查 Git 变更 + 有证据的直接影响范围）
 - `/retro` — 经验复盘沉淀
 
