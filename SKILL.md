@@ -84,6 +84,7 @@ SDD（规格驱动开发）翻转传统开发流程：**规格是核心产出物
   - `{SKILL_ROOT}/assets/agent-instructions.md`、`{SKILL_ROOT}/assets/sdd-workflow-doc.md`、`{SKILL_ROOT}/assets/lessons-skeleton.md`
   - `{SKILL_ROOT}/assets/retro-skill.md`、`{SKILL_ROOT}/assets/retro-references/`（目录）
   - `{SKILL_ROOT}/assets/quality-gate-skill.md`
+  - `{SKILL_ROOT}/assets/speckit-memory/extension.yml`、`{SKILL_ROOT}/assets/speckit-memory/commands/speckit.memory.lookup.md`
   - `{SKILL_ROOT}/references/injection-texts.md`、`{SKILL_ROOT}/references/rollback-guide.md`
 
 > 文档为简洁省略了 `{SKILL_ROOT}/` / `{PROJECT_ROOT}/` 前缀，但在实际执行时必须带上。
@@ -115,18 +116,24 @@ SDD（规格驱动开发）翻转传统开发流程：**规格是核心产出物
 10. `{AGENT_SKILL_DIR}/speckit-quality/SKILL.md` 是否存在，且含 `SPEC-KIT-INIT-MANAGED` 托管标记
 11. `.specify/extensions/bug/` 目录是否存在（Bug Extension）
 
-**C. 注入完整性**（每条对照 `references/injection-texts.md` 第 9.1 节标记注册表，扫描目标文件中的 `SPEC-KIT-INIT` 标记）
+**C. 注入完整性**（每条对照 `references/injection-texts.md` 第 9.1 节标记注册表，扫描目标文件中的 `SPEC-KIT-INIT` 标记；仅剩 Bug 链路与外部知识库两类注入，plan/implement 的经验注入已迁移为原生 Hook，见 D）
 
-12. `/speckit-plan` 中 `SPEC-KIT-INIT:PLAN-LESSONS` 标记是否存在
-13. `/speckit-implement` 中 `SPEC-KIT-INIT:IMPLEMENT-LESSONS` 标记是否存在
-14. `/speckit-implement` 中 `SPEC-KIT-INIT:IMPLEMENT-RETRO` 标记是否存在
-15. `/speckit.bug.assess` 中 `SPEC-KIT-INIT:BUG-ASSESS-LESSONS` 标记是否存在（若 Bug Extension 存在）
-16. `/speckit.bug.test` 中 `SPEC-KIT-INIT:BUG-TEST-QUALITY-RETRO` 标记是否存在（若 Bug Extension 存在）
-17. `{AGENT_FILE}` 中 `SPEC-KIT-INIT:KB-REFERENCE` 标记是否存在（若 `.specify/config.yml` 的 `knowledge_base.enabled=true`，Schema 见 `references/injection-texts.md` 第 9.3 节）
+12. `/speckit.bug.assess` 中 `SPEC-KIT-INIT:BUG-ASSESS-LESSONS` 标记是否存在（若 Bug Extension 存在）
+13. `/speckit.bug.test` 中 `SPEC-KIT-INIT:BUG-TEST-QUALITY-RETRO` 标记是否存在（若 Bug Extension 存在）
+14. `{AGENT_FILE}` 中 `SPEC-KIT-INIT:KB-REFERENCE` 标记是否存在（若 `.specify/config.yml` 的 `knowledge_base.enabled=true`，Schema 见 `references/injection-texts.md` 第 9.3 节）
+
+**D. 原生 Hook（memory 扩展，经验查阅 + 沉淀）**（读取 `.specify/extensions.yml` 的 `hooks:` 键，Schema 见 `references/injection-texts.md` 第 9.5 节）
+
+15. `hooks.before_plan` 存在且指向 `speckit.memory.lookup`（`optional=false`）
+16. `hooks.before_implement` 存在且指向 `speckit.memory.lookup`
+17. `hooks.after_implement` 存在且指向 `retro`（`optional=true`）
+18. `{AGENT_SKILL_DIR}/speckit-memory-lookup/SKILL.md` 是否存在（memory 扩展命令）
+
+> **存量标记识别（旧版遗留）**：`/speckit-plan` 或 `/speckit-implement` 中仍存在 `SPEC-KIT-INIT:PLAN-LESSONS` / `IMPLEMENT-LESSONS` / `IMPLEMENT-RETRO` 标记 → 判定为旧版文本注入项目，升级（0.4）时移除旧文本并确认 hook 就位（见 0.4 升级说明）。
 
 #### 0.2 交叉验证与状态判定
 
-**配置记录 vs 实际标记**：读取 `.specify/config.yml` 中 `spec_kit_init.injections.*` 记录，与 0.1 扫描到的实际标记交叉验证（规则见 `references/injection-texts.md` 第 9.4 节）。配置记录不是事实来源，`specify` 升级可能覆盖注入内容，必须两者同时读取。
+**配置记录 vs 实际状态**：读取 `.specify/config.yml` 中 `spec_kit_init.injections.*` 记录，与 0.1 扫描到的实际标记交叉验证（规则见 `references/injection-texts.md` 第 9.4 节）。`extensions.memory` 记录与 0.1 扫描到的实际 Hook 交叉验证（规则见第 9.5 节）。配置记录不是事实来源，`specify` 升级可能覆盖注入内容，必须两者同时读取。
 
 **状态汇总**：将 0.1 的结果归类为「完成 / 缺失 / 被覆盖 / 需要人工确认」。
 
@@ -149,12 +156,12 @@ SDD（规格驱动开发）翻转传统开发流程：**规格是核心产出物
 - 已有 `.specify/` 和 speckit-* 命令 → 跳过阶段 1.5
 - 缺少 retro skill → 仅执行阶段 3.2（含 3.2.1）
 - 缺少 quality gate → 仅执行阶段 4
-- speckit-implement 缺少经验/复盘注入 → 执行 3.4
+- 缺少 memory hook（`hooks.before_plan` / `before_implement` / `after_implement` 任一缺失）→ 回阶段 3.1 重装 memory 扩展
 - 配置有记录但实际无标记（被覆盖）→ 仅重新注入对应项，不重建其他组件
 - 只有 `lessons-index.md` 缺失 → 从现有 `lessons.md` 正文重建索引（见 3.1 边界处理），不覆盖正文
 - `knowledge_base.enabled=true` 但 `{AGENT_FILE}` 无 `SPEC-KIT-INIT:KB-REFERENCE` 标记 → 仅重新注入外部知识库段（阶段 2 的 KB 注入步骤），不重复询问路径（沿用 config.yml 中已记录的路径）
 
-**修补失败路径**：注入被覆盖且锚点匹配率仍低时，该注入标记为 `overwritten`，走兜底追加并提示人工确认位置。
+**修补失败路径**：注入被覆盖且锚点匹配率仍低时，该注入标记为 `overwritten`，走兜底追加并提示人工确认位置。Hook 无兜底追加概念——重装 memory 扩展即恢复（`specify extension add ... --dev --force` 幂等）。
 
 #### 0.4 升级 / 重建模式
 
@@ -174,6 +181,14 @@ SDD（规格驱动开发）翻转传统开发流程：**规格是核心产出物
 | 有标记，内容与安装时不一致（hash 不匹配，用户改过） | 展示差异，询问用户：覆盖 / 保留 / 合并 |
 
 处理完成后，更新 `.specify/config.yml` 中对应 `assets.*` 的 `template-version` 与 `content_hash`。若同时检测到注入标记被覆盖（`overwritten`），顺带恢复注入。
+
+**存量经验注入迁移（旧版文本 → 原生 Hook）**：若 0.1 检测到 `/speckit-plan` 或 `/speckit-implement` 中残留旧版 `SPEC-KIT-INIT:PLAN-LESSONS` / `IMPLEMENT-LESSONS` / `IMPLEMENT-RETRO` 标记文本，说明项目由旧版本 Skill 初始化。升级时执行迁移：
+
+1. 安装 memory 扩展（若 hook 已就位则跳过）：`specify extension add "{SKILL_ROOT}/assets/speckit-memory" --dev --force`
+2. **移除** speckit-plan / speckit-implement 中的旧注入文本（`SPEC-KIT-INIT:*-LESSONS` / `*-RETRO` 标记包裹的段落——本 Skill 托管内容，被 hook 取代，安全删除；若用户改过该段落，先展示差异再确认）
+3. 更新 `.specify/config.yml`：删 `injections.speckit_plan_lessons` / `speckit_implement_lessons` / `speckit_implement_retro`，改记 `extensions.memory`（Schema 见 `references/injection-texts.md` 第 9.5 节）
+
+> **迁移后行为等价**：`before_plan` / `before_implement` 钩子强制触发 `speckit.memory.lookup` 查阅经验（原"MUST 读"）；`after_implement` 钩子可选询问复盘（原"完成后询问"）。bug-assess / bug-test 两处注入不受影响，保留标记。
 
 ##### 0.4.2 重建（reset，原「强制重新初始化」）
 
@@ -352,6 +367,16 @@ echo "" | PYTHONIOENCODING=utf-8 specify init --here --integration {AGENT_SPECIF
 echo "" | PYTHONIOENCODING=utf-8 specify init --here --integration {AGENT_SPECIFY} --force && specify extension add bug --force
 ```
 
+**安装 memory 扩展（经验查阅 + 沉淀钩子）**：`specify init` 与 Bug Extension 安装后，安装本 Skill 自带的 memory 扩展。它会自动注册 `speckit.memory.lookup` 命令与 3 个原生 Hook（`before_plan` / `before_implement` 触发经验查阅，`after_implement` 触发复盘询问），由 spec-kit 模板内建逻辑读取，**无需任何文本注入**：
+
+```bash
+specify extension add "{SKILL_ROOT}/assets/speckit-memory" --dev --force
+```
+
+> `--dev` 表示从本地目录安装（`specify extension add` 支持把路径作为参数）。安装后 `.specify/extensions.yml` 的 `hooks:` 键会出现这 3 个 Hook，speckit-plan / speckit-implement 模板会在对应生命周期节点自动读取并触发（`before_` 强制执行，`after_` 可选询问）。Hook 是项目配置文件里的数据，spec-kit 升级不覆盖，天然抗升级。
+>
+> memory 扩展安装失败**不阻断**初始化——标记为「可降级」，阶段 0 补齐模式下可重装。
+
 如已有 `.specify/` 目录，先询问用户是否覆盖。如果用户拒绝覆盖，跳过本步并告知用户 SDD 工作流结构已存在，后续注入将继续。
 如 `specify init` 失败，输出完整错误信息并终止，提示用户检查网络和 GitHub 访问。如 `specify init` 成功但 `specify extension add bug` 失败，记录失败原因，后续阶段 5 注入将跳过。
 
@@ -437,8 +462,8 @@ Constitution 是 SDD 的最高准则。初始化时自动写入一份基本宪�
 
 阶段 3（经验沉淀）、阶段 4（质量门禁）、阶段 5（Bug 修复）中有多个步骤互不依赖。详细编排方案（含依赖图和每波说明）见 `references/parallel-orchestration.md`，以下为摘要：
 
-- **第一波**：3.1 创建经验文件 ⚡ 3.2 安装 /retro（含 3.2.1）⚡ 4.1 安装 /speckit-quality（三个文件创建操作，互不依赖）
-- **第二波**：3.3 改造 specit-plan ⚡ 3.4 改造 specit-implement ⚡ 5.1 验证 Bug Extension（修改不同文件，无冲突；5.1 依赖 1.5 安装结果）
+- **第一波**：3.1 校验 memory 扩展 + 创建经验文件 ⚡ 3.2 安装 /retro（含 3.2.1）⚡ 4.1 安装 /speckit-quality（三个文件创建操作，互不依赖；3.1 依赖 1.5 已安装 memory 扩展，如缺失则顺带重装）
+- **第二波**：3.3 校验 /speckit-plan 经验查阅钩子 ⚡ 3.4 校验 /speckit-implement 经验查阅 + 复盘钩子 ⚡ 5.1 验证 Bug Extension（均为只读验证，无文件冲突；5.1 依赖 1.5 安装结果）
 - **收尾**：3.5 验证经验闭环 ⚡ 4.2 验证质量门禁，然后顺序执行 5.2（依赖 5.1）→ 5.3
 
 > 并行编排是执行建议，非硬性约束。串行执行不会导致失败或内容缺失，仅总耗时增加。
@@ -447,11 +472,24 @@ Constitution 是 SDD 的最高准则。初始化时自动写入一份基本宪�
 
 这是本 skill 相比标准 `specify init` 的增强部分——在 SDD 工作流的基础上，建立从"写完代码"到"经验被复用"的完整闭环。
 
-#### 3.1 创建经验文件骨架 ⚡第一波
+#### 3.1 校验 memory 扩展 + 创建经验文件骨架 ⚡第一波
 
-> **设计意图**：放在 `.specify/memory/` 下，与 `constitution.md` 同目录，确保 speckit 生态内所有经验资产集中管理，便于 `/speckit-plan` 和 `/speckit-implement` 统一读取。
+> **设计意图**：经验资产的"接入"通过 spec-kit **原生 Hook** 实现，不再向 speckit-* 命令注入文本。memory 扩展已在阶段 1.5 随 `specify extension add memory` 安装，本步校验其就位；如 1.5 被跳过或缺钩子（补齐场景），在此重装。经验文件放在 `.specify/memory/` 下，与 `constitution.md` 同目录，供 `speckit.memory.lookup` 命令与 `/retro` 统一读取。
 
-读取 `{SKILL_ROOT}/assets/lessons-skeleton.md`，按其中的模板创建两个文件。**两个文件逐文件独立处理，不得用模板整体覆盖已有文件**：
+**校验 & 补齐 memory 扩展**（经验查阅 / 复盘钩子）：
+
+1. 读取 `.specify/extensions.yml`，确认 `hooks.before_plan`、`hooks.before_implement`（均指向 `speckit.memory.lookup`）与 `hooks.after_implement`（指向 `retro`）三个钩子存在
+2. 任一缺失，或 `{AGENT_SKILL_DIR}/speckit-memory-lookup/SKILL.md` 不存在 → 重装：
+
+   ```bash
+   specify extension add "{SKILL_ROOT}/assets/speckit-memory" --dev --force
+   ```
+
+   > spec-kit 模板内建读取 `hooks.before_plan / before_implement / after_implement`（原生能力），无需向 speckit-plan / speckit-implement 注入任何文本。钩子引用 `retro` 只是数据——运行时 `retro` skill 已由 3.2 就位，安装顺序不影响。重装仅影响本 Skill 托管内容，不会触碰用户对 extensions.yml 的其他修改。
+
+3. 在 `.specify/config.yml` 中记录 `spec_kit_init.extensions.memory` 状态（Schema 见 `references/injection-texts.md` 第 9.5 节）。
+
+**创建经验文件骨架**：读取 `{SKILL_ROOT}/assets/lessons-skeleton.md`，按其中的模板创建两个文件。**两个文件逐文件独立处理，不得用模板整体覆盖已有文件**：
 
 | 文件状态 | 处理 |
 |----------|------|
@@ -507,51 +545,37 @@ cp -r "{SKILL_ROOT}/assets/retro-references/." "{PROJECT_ROOT}/{AGENT_SKILL_DIR}
 
 如 references/ 已存在，仅覆盖同名文件，不删除其他已有文件。
 
-#### 3.3 改造 /speckit-plan（注入 lessons.md 必读）⚡第二波
+#### 3.3 校验 /speckit-plan 经验查阅钩子 ⚡第二波
 
 > **设计意图**：经验按"稳定性"分层——constitution 管最高原则（不可违反）、lessons 管实战经验（灵活积累），避免同级混放导致后续查找困难。
+>
+> **机制变更**：经验查阅已从"向 /speckit-plan 注入 MUST 读文本"改为 **spec-kit 原生 `before_plan` Hook**（memory 扩展，阶段 1.5/3.1 安装）。spec-kit 模板内建读取 `hooks.before_plan`，自动触发 `speckit.memory.lookup` 命令做两步查阅——**不再修改 speckit-plan 文件**。
 
-> 仅在 `{AGENT_SKILL_DIR}/speckit-plan/SKILL.md` 存在时执行（Copilot/Cursor 无 speckit 命令，自动跳过）。
+> 仅在 `{AGENT_SPECIFY}` 有值时执行（Claude Code / Codex；Copilot/Cursor 无 speckit 命令，自动跳过）。
 
-**兼容性预检**：注入前先读取目标文件，对照 `references/injection-texts.md` 第 8.1 节中的锚点列表进行匹配：
+**验证**：读取 `.specify/extensions.yml`，确认 `hooks.before_plan` 存在且指向 `speckit.memory.lookup`，`optional=false`。
 
-- 匹配率 ≥ 60%（≥3/5 个锚点命中）→ 正常执行以下正则匹配
-- 匹配率 < 60% → **警告用户**「speckit-plan 文件结构变化较大（锚点匹配率 {X}/5），注入已降级为文件末尾追加，请人工确认位置」→ 跳过正则匹配，直接使用第 1.2 节兜底追加文本
+- 存在 → 通过（不做任何文件注入）
+- 缺失 → 回阶段 3.1 补齐 memory 扩展
 
-读取 `{AGENT_SKILL_DIR}/speckit-plan/SKILL.md`。
+> **存量迁移**：旧版已注入 `SPEC-KIT-INIT:PLAN-LESSONS` 标记文本的项目，升级（0.4）时会移除该段旧文本（被 hook 取代），见 0.4 升级说明。
 
-用语义正则定位到 "Load context" 相关步骤（匹配 `Load context`、`加载上下文` 或类似小节标题），在该步骤的读取列表中 `constitution.md` 之后追加一行。
+#### 3.4 校验 /speckit-implement 经验查阅 + 复盘钩子 ⚡第二波
 
-读取 `references/injection-texts.md` 第 1 节，获取注入文本和兜底追加文本。注入内容使用**两步读取**模式：先扫 `lessons-index.md` 判断相关性，命中后才读 `lessons.md` 具体条目。
+> **设计意图**：在记忆最新鲜时捕捉经验——完成瞬间是复盘的最佳时机，而非事后再回忆。
+>
+> **机制变更**：经验查阅 + 复盘询问已从"注入 implement 两段文本"改为 **spec-kit 原生 Hook**——`before_implement` 触发 `speckit.memory.lookup`（查阅），`after_implement` 触发 `retro`（可选复盘询问）。**不再修改 speckit-implement 文件**。
 
-**正则匹配失败时**：使用第 1.2 节兜底追加文本，追加后明确告知用户："/speckit-plan 自动注入未完全成功（模板结构已变化），已在文件末尾追加插桩，请人工确认并调整位置。"
+> 仅在 `{AGENT_SPECIFY}` 有值时执行（Claude Code / Codex；Copilot/Cursor 自动跳过）。
 
-**注入成功后**，在 `.specify/config.yml` 中追加或更新 `spec_kit_init.injections.speckit_plan_lessons` 字段（Schema 见 `references/injection-texts.md` 第 9.3 节，`status` 为 `applied` 或 `fallback`），供阶段 0 交叉验证使用。
+**验证**：读取 `.specify/extensions.yml`，确认：
 
-#### 3.4 改造 /speckit-implement（注入 lessons.md 必读 + 复盘询问）⚡第二波
+- `hooks.before_implement` 存在且指向 `speckit.memory.lookup`（查阅）
+- `hooks.after_implement` 存在且指向 `retro`，`optional=true`（复盘询问，无价值场景由 /retro 自行跳过）
 
-> **设计意图**：在记忆最新鲜时捕捉经验——完成瞬间是复盘的最佳时机，而非事后再回忆。自动提示确保"做完一件事"和"留下经验"不会脱钩。
+任一项缺失 → 回阶段 3.1 补齐 memory 扩展。
 
-> 仅在 `{AGENT_SKILL_DIR}/speckit-implement/SKILL.md` 存在时执行（Copilot/Cursor 无 speckit 命令，自动跳过）。
-
-**兼容性预检**：注入前先读取目标文件，对照 `references/injection-texts.md` 第 8.2 节中的两组锚点分别匹配：
-
-- 两组锚点各自的匹配率均 ≥ 50% → 正常执行以下正则匹配
-- 任一组匹配率 < 50% → **警告用户**「speckit-implement 文件结构变化较大，注入已降级为文件末尾追加，请人工确认位置」，跳过正则匹配，使用第 3.2 节兜底追加文本
-
-读取 `{AGENT_SKILL_DIR}/speckit-implement/SKILL.md`。
-
-**改动 A**：用语义正则定位到实现上下文读取步骤（匹配如 `Load and analyze`、`implementation context`、`加载实现上下文` 等模式），在 `constitution.md` 相关的读取行之前插入。
-
-读取 `references/injection-texts.md` 第 2 节获取注入文本。注入内容使用**两步读取**模式：先扫 `lessons-index.md` 判断相关性，命中后才读 `lessons.md` 具体条目。
-
-**改动 B**：用语义正则定位到 "Completion validation" 或最后验证步骤之后、Extension hooks 之前的区域，插入复盘提示步骤。
-
-读取 `references/injection-texts.md` 第 3 节获取注入文本。并将原后续步骤重新编号。
-
-**正则匹配失败时的兜底**：任一改动无法匹配时，使用第 3.2 节兜底追加文本。追加后明确告知用户："/speckit-implement 自动注入未完全成功（模板结构已变化），已在文件末尾追加插桩，请人工确认并调整位置。"
-
-**注入成功后**，在 `.specify/config.yml` 中分别追加或更新 `spec_kit_init.injections.speckit_implement_lessons` 与 `speckit_implement_retro` 字段（Schema 见 `references/injection-texts.md` 第 9.3 节），供阶段 0 交叉验证使用。改动 A 与改动 B 各记录一条。
+> **存量迁移**：旧版已注入 `IMPLEMENT-LESSONS` / `IMPLEMENT-RETRO` 标记文本的项目，升级（0.4）时会移除该段旧文本（被 hook 取代），见 0.4 升级说明。
 
 #### 3.5 验证闭环完整性
 
@@ -561,10 +585,12 @@ cp -r "{SKILL_ROOT}/assets/retro-references/." "{PROJECT_ROOT}/{AGENT_SKILL_DIR}
 - [ ] `{AGENT_SKILL_DIR}/retro/references/mechanism-auditor.md` 存在
 - [ ] `{AGENT_SKILL_DIR}/retro/references/routing-auditor.md` 存在
 - [ ] `.specify/memory/lessons.md` 存在
+- [ ] `{AGENT_SKILL_DIR}/speckit-memory-lookup/SKILL.md` 存在（memory 扩展命令）
+- [ ] `.specify/extensions.yml` 的 hooks 含 `before_plan` / `before_implement`（→ lookup）与 `after_implement`（→ retro）
 - [ ] `.specify/sdd-workflow.md` 存在且非空（精简 SDD 段引用的完整工作流文档）
 - [ ] `{AGENT_FILE}` 顶部有「经验库优先」段（含纠正即捕获指令）
-- [ ] `/speckit-plan` 读到 lessons.md
-- [ ] `/speckit-implement` 读到 lessons.md + 完成后询问复盘
+- [ ] `/speckit-plan` 前 `before_plan` 钩子触发 `speckit.memory.lookup` 查阅经验
+- [ ] `/speckit-implement` 前 `before_implement` 钩子查阅经验；完成后 `after_implement` 钩子询问复盘
 - [ ] 复盘写入后，下次会话 `{AGENT_FILE}` 强制读 lessons.md → 经验被复用
 
 ### 阶段 4：代码质量门禁初始化
@@ -687,7 +713,7 @@ Bug Extension 的三步流程本身已完整，在此之上接入本项目已有
 ## 约束
 
 - 不删除用户已有文件，除非明确同意
-- 注入 `{AGENT_FILE}` 用 `<!-- SDD:START -->` / `<!-- SDD:END -->` 标记；注入 speckit-* 命令用 `<!-- SPEC-KIT-INIT:<组件>:START/END -->` 标记（注册表见 `references/injection-texts.md` 第 9.1 节）
+- 注入 `{AGENT_FILE}` 用 `<!-- SDD:START -->` / `<!-- SDD:END -->` 标记；注入 speckit-* 命令用 `<!-- SPEC-KIT-INIT:<组件>:START/END -->` 标记（注册表见 `references/injection-texts.md` 第 9.1 节）。**经验查阅/复盘不再注入 speckit-* 命令**，由 memory 扩展的 spec-kit 原生 Hook 承担（注册表见 `references/injection-texts.md` 第 9.5 节）
 - 已有项目先展示变更摘要再执行：即将创建的文件清单（.specify/ 目录结构、{AGENT\_SKILL\_DIR}/speckit-*、{AGENT\_FILE} 注入段）、即将修改的现有文件（{AGENT\_FILE}、{AGENT\_SKILL\_DIR}/speckit-*）。用户确认后再执行
 - 不再调用内置 `/init`
 - 经验沉淀机制（/retro + lessons.md + speckit 改造）是初始化的一部分，不要跳过

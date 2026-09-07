@@ -29,11 +29,12 @@
 本项目在标准 SDD 工作流之上叠加了**经验沉淀与自动复用机制**，解决"踩过的坑反复踩"的问题：
 
 ```
-实现完成 → 复盘提示 → /retro 沉淀 → lessons.md 入库
-→ 下次会话 AI 强制读 lessons.md → 经验被自动参考
+规划/实现前 → 原生 Hook 自动查阅经验库（先扫索引，命中才读正文）
+实现完成 → Hook 询问复盘 → /retro 沉淀 → lessons.md 入库
+→ 下次 plan/implement 前经验被自动参考
 ```
 
-每次 `/speckit-implement` 完成后，AI 会主动询问是否复盘；用户指出 AI 错误时也会自动触发纠正捕获。经验通过 **5 层经验质量筛选 + 双角色对抗审查 + 去重** 后方可入库，确保 `lessons.md` 中每一条都值得下次会话阅读。
+经验查阅与复盘询问通过 **spec-kit 原生 Hook** 触发（`before_plan` / `before_implement` 强制查阅经验库，`after_implement` 询问是否复盘）——Hook 是 `.specify/extensions.yml` 里的数据，由 spec-kit 模板内建逻辑读取，**不向 speckit-plan / speckit-implement 注入任何文本**，天然抗 spec-kit 升级覆盖。每次 `/speckit-implement` 完成后，AI 会主动询问是否复盘；用户指出 AI 错误时也会自动触发纠正捕获。经验通过 **5 层经验质量筛选 + 双角色对抗审查 + 去重** 后方可入库，确保 `lessons.md` 中每一条都值得下次会话阅读。
 
 ---
 
@@ -49,19 +50,19 @@
 
 ## 支持的 AI 编码工具
 
-| 工具 | 指令文件 | Skill 目录 | SDD 命令 | 复盘机制 |
+| 工具 | 指令文件 | Skill 目录 | SDD 命令 | 经验查阅/复盘 |
 |------|----------|------------|----------|----------|
-| **Claude Code** | `CLAUDE.md` | `.claude/skills` | ✅ 完整支持 | ✅ 完整支持 |
-| **Codex** | `AGENTS.md` | `.agents/skills` | ✅ 完整支持 | ✅ 完整支持 |
-| **GitHub Copilot** | `.github/copilot-instructions.md` | `.claude/skills` ¹ | ❌ 不支持 | ⚠️ 经验文件 + 纠正捕获 |
-| **Cursor** | `.cursor/rules/spec-kit-init.mdc` ² | `.claude/skills` ¹ | ❌ 不支持 | ⚠️ 经验文件 + 纠正捕获 |
+| **Claude Code** | `CLAUDE.md` | `.claude/skills` | ✅ 完整支持 | ✅ Hook 自动查阅 + /retro 复盘 |
+| **Codex** | `AGENTS.md` | `.agents/skills` | ✅ 完整支持 | ✅ Hook 自动查阅 + /retro 复盘 |
+| **GitHub Copilot** | `.github/copilot-instructions.md` | `.claude/skills` ¹ | ❌ 不支持 | ⚠️ 经验文件 + 纠正捕获 ³ |
+| **Cursor** | `.cursor/rules/spec-kit-init.mdc` ² | `.claude/skills` ¹ | ❌ 不支持 | ⚠️ 经验文件 + 纠正捕获 ³ |
 | **其他（自定义）** | 逐一配置 | 逐一配置 | 按配置决定 | 按配置决定 |
 
 > ¹ Copilot/Cursor 自身无标准 skill 系统，使用 `.claude/skills` 仅用于统一安装 retro skill。spec-kit 系列命令与 `/retro` 斜杠命令在这些平台上不可用。
 >
 > ² Cursor 的指令文件是**具体 `.mdc` 文件**（带 `description` + `alwaysApply` frontmatter），不是 `.cursor/rules/` 目录；不修改用户已有其他规则文件。
 >
-> ³ Copilot/Cursor 的经验沉淀只保留「经验文件读取 + 纠正即捕获 + 自然语言复盘」能力——`lessons.md` 是纯 Markdown 文件，与平台无关；指令注入段中「调用 /retro」的表述在这些平台替换为「按复盘流程执行」。
+> ³ Copilot/Cursor 的经验沉淀只保留「经验文件读取 + 纠正即捕获 + 自然语言复盘」能力——`lessons.md` 是纯 Markdown 文件，与平台无关；指令注入段中「调用 /retro」的表述在这些平台替换为「按复盘流程执行」。经验查阅/复盘的 spec-kit 原生 Hook 仅在 Claude Code / Codex 触发；copilot/cursor 平台上 memory 扩展不装（或装了也不触发），回退为指令文件中的自然语言经验查阅指引。
 
 ---
 
@@ -114,6 +115,12 @@ spec-kit-init/
     │                                          #   · 文件级/模块级/全量分层检查
     │                                          #   · 工具映射、结果归因与修复流程
     │
+    ├── speckit-memory/                        # ★ memory 扩展（经验查阅/复盘 Hook）
+    │   ├── extension.yml                      #   声明 speckit.memory.lookup 命令 + 3 个原生 Hook
+    │   │                                      #   before_plan/before_implement→lookup，after_implement→retro
+    │   └── commands/
+    │       └── speckit.memory.lookup.md       #   经验库两步查阅命令正文（先扫索引，命中才读正文）
+    │
     └── retro-references/                      # 复盘审查角色 prompt 模板
         ├── mechanism-auditor.md               # 机制审计员 — 审查经验是否揭示根因
         └── routing-auditor.md                 # 路由审核员 — 宪法级 vs 经验级分流
@@ -132,6 +139,8 @@ spec-kit-init/
 | `references/platform-support-matrix.md` | 四平台功能支持矩阵 + 组件依赖矩阵 + 补齐决策表 | 阶段 0.3 按需读取 |
 | `assets/retro-skill.md` | /retro 命令的完整定义，写入目标项目 | 阶段 3.2 按需读取 |
 | `assets/quality-gate-skill.md` | /speckit-quality 命令的完整定义，写入目标项目 | 阶段 4.1 按需读取 |
+| `assets/speckit-memory/extension.yml` | memory 扩展定义：`speckit.memory.lookup` 命令 + 3 个原生 Hook（经验查阅/复盘） | 阶段 1.5 / 3.1 安装时读取 |
+| `assets/speckit-memory/commands/speckit.memory.lookup.md` | 经验库两步查阅命令正文（被 before_plan / before_implement 钩子触发） | 阶段 1.5 / 3.1 安装时随扩展复制 |
 | `assets/retro-references/mechanism-auditor.md` | 对抗审查角色 1 的审查标准 | /retro 执行时由子代理读取 |
 | `assets/retro-references/routing-auditor.md` | 对抗审查角色 2 的路由标准 | /retro 执行时由子代理读取 |
 
@@ -153,9 +162,11 @@ spec-kit-init/
 1.2.2 询问外部知识库（可选）──→ 是否链接本地文档目录供 AI 按需参考（支持多路径，校验存在且为目录）
 1.3 确认执行 ──→ 展示即将执行的操作摘要，一句话确认
 1.4 代码库分析 ──→ 已有项目时分析架构/技术栈/构建命令（空目录跳过，与 1.5 并行）
-1.5 specify init ──→ 安装 SDD 工作流框架 + Bug Extension（仅 Claude Code / Codex，与 1.4 并行）
+1.5 specify init ──→ 安装 SDD 工作流框架 + Bug Extension + memory 扩展（仅 Claude Code / Codex，与 1.4 并行）
      ├── 调用 ensure-specify.sh 安装 specify-cli
      ├── echo "" | specify init --here --integration <agent> --force && specify extension add bug --force
+     ├── specify extension add "{SKILL_ROOT}/assets/speckit-memory" --dev --force
+     │      └── 注册 speckit.memory.lookup 命令 + 3 个原生 Hook（经验查阅/复盘），失败不阻断（可降级，阶段 0/3 补齐）
      └── 清理 speckit-git-* 无关 skill
 1.6 自动写入基本宪章 ──→ 自动生成 .specify/memory/constitution.md（后续可通过 /speckit-constitution 修订）
 ```
@@ -178,7 +189,8 @@ spec-kit-init/
 这是本 skill 相比标准 `specify init` 的核心增强：
 
 ```
-3.1 创建经验文件骨架
+3.1 校验 memory 扩展 + 创建经验文件骨架
+     ├── 确认 before_plan / before_implement / after_implement 三个 Hook 就位，缺则幂等重装 memory 扩展
      ├── .specify/memory/lessons.md  → 经验正文（最新在上）
      └── .specify/memory/lessons-index.md → 轻量去重索引（与正文物理隔离）
 
@@ -186,11 +198,11 @@ spec-kit-init/
      ├── assets/retro-skill.md → {AGENT_SKILL_DIR}/retro/SKILL.md
      └── assets/retro-references/ → {AGENT_SKILL_DIR}/retro/references/
 
-3.3 改造 /speckit-plan ──→ 注入 "MUST read lessons.md"
+3.3 校验 /speckit-plan 经验查阅钩子 ──→ 确认 before_plan → speckit.memory.lookup（不再注入文本）
 
-3.4 改造 /speckit-implement ──→ 注入 "REQUIRED read lessons.md" + 复盘询问
+3.4 校验 /speckit-implement 经验查阅 + 复盘钩子 ──→ 确认 before_implement → lookup + after_implement → retro（不再注入文本）
 
-3.5 验证闭环完整性 ──→ 逐项确认所有文件存在、注入到位
+3.5 验证闭环完整性 ──→ 逐项确认文件存在、Hook 就位、行为符合定义
 ```
 
 ### 阶段 4：代码质量门禁初始化
@@ -265,7 +277,19 @@ SKILL.md 本身包含全部流程描述，`references/` 和 `assets/` 下的文�
 |----------|----------|
 | `specify init` 失败 | 无文件变更，无需回滚 |
 | `specify init` 成功但后续失败 | `.specify/` 保留；`{AGENT_FILE}` 中手动删除 `<!-- SDD:...-->` 段 |
-| 阶段 3 部分失败 | 在 speckit-plan/implement 文件中删除 `<!-- ⚠ 自动追加...-->` 标记处的内容 |
+| 阶段 3 memory 扩展安装后失败 | `specify extension remove memory --force`——自动反注册 3 个 Hook + 移除 lookup skill；删除 config.yml 的 `extensions.memory` 记录 |
+| 阶段 5 Bug 注入后失败 | 在 speckit-bug-assess/test 文件中删除 `<!-- ⚠ 自动追加...-->` 标记处的内容 |
+
+### 经验查阅/复盘原生 Hook（而非文本注入）
+
+plan/implement 的经验查阅与复盘询问由 **spec-kit 原生 Hook** 承担，不再向 speckit-* 命令注入文本：
+
+- `before_plan` / `before_implement` → 强制触发 `speckit.memory.lookup` 命令做经验两步查阅
+- `after_implement` → 可选触发 `retro` 询问是否复盘
+
+Hook 声明在 `.specify/extensions.yml` 的 `hooks:` 键下（memory 扩展安装时自动合并），是项目配置文件里的**数据**，被 spec-kit 模板内建逻辑读取——spec-kit 升级不会冲掉，这正是本次改造取代文本注入对抗机制的原因。用户可对单个 Hook 设 `enabled: false` 彻底关闭（阶段 0 不自动改回）。
+
+> **硬约束**：`speckit.bug.*` 命令没有 hook 事件，因此 bug-assess 经验查阅、bug-test 质量门禁+复盘联动 2 处注入保留文本方案（`SPEC-KIT-INIT:BUG-*` 标记）。Hook 仅 speckit 能力平台（claude/codex）生效，copilot/cursor 回退为纯文件指引。
 
 ### 物理隔离的轻量去重索引
 

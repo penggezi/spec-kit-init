@@ -24,12 +24,16 @@ status: in_progress
 created:        # 本次运行新建的文件（回滚时删除）
   - .specify/sdd-workflow.md
   - .specify/memory/lessons-index.md
+  - .specify/extensions/memory/          # memory 扩展（经验 Hook）
+  - .claude/skills/speckit-memory-lookup/SKILL.md
 
 modified:       # 本次运行修改的现有文件（回滚时从备份恢复）
   - path: CLAUDE.md
     backup: backups/CLAUDE.md
   - path: .claude/skills/speckit-implement/SKILL.md
     backup: backups/speckit-implement-SKILL.md
+  - path: .specify/extensions.yml        # memory 扩展 hooks 合并处（回滚时恢复备份）
+    backup: backups/extensions.yml
 
 preexisting:    # 初始化前已存在、本次未触碰的文件（绝不删除）
   - .specify/memory/constitution.md
@@ -54,6 +58,7 @@ preexisting:    # 初始化前已存在、本次未触碰的文件（绝不删�
 | 阶段 3/4/5 注入后失败 | 删除目标文件中 `<!-- SPEC-KIT-INIT:...:START -->` 至 `<!-- SPEC-KIT-INIT:...:END -->` 之间的注入内容（兜底路径同时删除 `<!-- ⚠ 自动追加...-->` 标记块）；若文件整体被修改过，从 `modified` 的备份恢复 |
 | 正则匹配成功路径的注入需要回滚 | 同样通过 `SPEC-KIT-INIT` 标记删除——**正常注入与兜底注入使用相同标记**，不依赖 `⚠ 自动追加` 标记 |
 | Bug Extension 步骤（阶段 5）已安装但后续失败 | `.specify/extensions/bug/` 为本次新建时，运行 `specify extension remove bug` 清理；`.specify/bugs/` 目录为空时可删除（非本次创建则保留） |
+| memory 扩展（经验 Hook）已安装但后续失败 | 运行 `specify extension remove memory --force`——自动反注册 3 个 Hook（恢复 `.specify/extensions.yml` 到未装前）并移除 `speckit-memory-lookup` skill；删除 config.yml 中 `spec_kit_init.extensions.memory` 记录。若卸载前存在旧版文本注入（存量项目 0.4 迁移路径），回滚时**恢复** speckit-plan/implement 中的 3 段旧注入文本（从中止前的备份恢复） |
 
 ---
 

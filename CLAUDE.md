@@ -39,7 +39,9 @@
 | `assets/retro-references/mechanism-auditor.md` | 机制审计员审查 prompt 模板（判断经验是否揭示根因机制） |
 | `assets/retro-references/routing-auditor.md` | 路由审核员审查 prompt 模板（判断经验归入 constitution.md 还是 lessons.md） |
 | `assets/quality-gate-skill.md` | `/speckit-quality` 质量门禁命令的完整定义模板，含 Git 变更检测、直接影响推导、文件/模块/全量范围升级、技术栈工具映射和结果归因 |
-| `references/injection-texts.md` | 注入文本片段仓库。第 8 节注入兼容性锚点；第 9 节 `SPEC-KIT-INIT` 注入标记注册表 + `.specify/config.yml` 记录 Schema（阶段 0 交叉验证依据） |
+| `assets/speckit-memory/extension.yml` | **memory 扩展定义**：声明 `speckit.memory.lookup` 命令 + 3 个原生 Hook（`before_plan` / `before_implement` → lookup，`after_implement` → retro）。阶段 1.5 用 `specify extension add` 安装，Hook 合并进目标项目 `.specify/extensions.yml` |
+| `assets/speckit-memory/commands/speckit.memory.lookup.md` | memory 扩展的命令正文：经验库两步查阅（先扫 `lessons-index.md`，命中才读 `lessons.md` 正文），只读不写 |
+| `references/injection-texts.md` | 注入文本片段仓库。第 8 节注入兼容性锚点；第 9 节 `SPEC-KIT-INIT` 注入标记注册表 + `.specify/config.yml` 记录 Schema + **9.5 memory 扩展 hooks 注册表**（阶段 0 交叉验证依据） |
 | `references/parallel-orchestration.md` | 阶段 3-5 并行编排方案（依赖图 + 每波说明） |
 | `references/platform-support-matrix.md` | 平台支持矩阵 + 组件依赖矩阵 + 补齐场景决策表（补齐/升级/重建模式执行顺序） |
 | `references/rollback-guide.md` | 事务式回滚指南：备份清单 + 精确回滚，禁止无条件 `rm -rf` |
@@ -64,12 +66,12 @@
 阶段 2：合并产出指令文件 → 将 SDD 段注入目标项目指令文件
 
 阶段 3：经验沉淀机制初始化
-  ├── 3.1 创建 lessons.md + lessons-index.md 骨架（物理隔离的轻量去重索引）
+  ├── 3.1 校验 memory 扩展 + 创建 lessons.md + lessons-index.md 骨架（物理隔离的轻量去重索引）
   ├── 3.2 安装 /retro skill
   ├── 3.2.1 安装 /retro 子代理审查模板（mechanism-auditor + routing-auditor）
-  ├── 3.3 改造 /speckit-plan（注入 lessons.md 必读）+ 版本锚定
-  ├── 3.4 改造 /speckit-implement（注入 lessons.md + 复盘询问）+ 版本锚定
-  └── 3.5 验证闭环完整性（逐项确认所有文件存在、注入到位）
+  ├── 3.3 校验 /speckit-plan 经验查阅钩子（`before_plan` → `speckit.memory.lookup`，强制）
+  ├── 3.4 校验 /speckit-implement 经验查阅 + 复盘钩子（`before_implement` → lookup，`after_implement` → retro 可选）
+  └── 3.5 验证闭环完整性（逐项确认文件存在、Hook 就位、行为符合定义）
 
 阶段 4：代码质量门禁初始化
   ├── 4.1 安装 /speckit-quality skill
@@ -96,6 +98,7 @@
 - **支持多平台**：Claude Code、Codex、GitHub Copilot、Cursor 各有不同的指令文件路径和配置参数
 - **增量质量门禁**：`assets/quality-gate-skill.md` 是质量范围规则的唯一事实来源。默认收集 Git 中已暂存、未暂存与未追踪的改动，并只加入有证据的直接影响范围；删除文件不直接 lint。公共契约、配置/依赖、跨模块或影响边界不明时才升级模块或全量，且必须报告升级原因；未修改区域的存量问题不得归因于本次改动。`SKILL.md`、README 与指令注入模板只引用该规则，不重复维护固定全仓库命令。
 - **Bug Extension 随 SDD 框架一同安装**：`specify extension add bug --force` 已随 `specify-cli` 打包，无需网络，直接链在阶段 1.5 的 `specify init` 后一步完成，消除独立的安装步骤。
+- **经验查阅/复盘用 spec-kit 原生 Hook，不再文本注入**：经验查阅（plan/implement 前）与复盘询问（implement 后）由 memory 扩展注册的 `before_plan` / `before_implement` / `after_implement` 三个原生 Hook 触发，Hook 逻辑体放进 `speckit.memory.lookup` 命令。Hook 是 `.specify/extensions.yml` 里的**数据**、被 spec-kit 模板内建逻辑读取，天然抗 spec-kit 升级覆盖——消除了对 speckit-plan/implement 文本注入那套对抗机制（`SPEC-KIT-INIT` 标记 + 配置交叉验证）的依赖。**硬约束**：`speckit.bug.*` 命令无 hook 事件（bug extension "registers no hooks"），因此 bug-assess 经验查阅、bug-test 质量门禁+复盘联动 2 处注入**保留文本方案**。Hook 仅 speckit 能力平台（claude/codex）生效，copilot/cursor 回退为纯文件指引。
 - **外部知识库按需参考（非必读）**：外部知识库是项目外的本地文档目录（阶段 1.2.2 询问，可选）。注入 `{AGENT_FILE}` 的段落只指示 AI「按需检索、只读相关文件、不整体读取」，与「经验库优先」段的必读语义刻意区分——知识库可能很大，整体读取会浪费每次会话的上下文。外部知识库目录全程只读，绝不写入。
 - **阶段间并行编排**：阶段 1.4（代码库分析）与 1.5（specify init + Bug Extension 安装）互不依赖，可并行执行。阶段 3-5 中，文件创建操作（3.1/3.2/4.1）可内部并行；speckit-plan 与 speckit-implement 的注入（3.3/3.4）与 Bug Extension 验证（5.1）互不依赖，可并行；经验闭环验证（3.5）与质量门禁验证（4.2）可并行。并行编排是执行建议而非硬性约束，串行执行不会导致失败，仅耗时增加。预计节省约 25-35% 初始化时间。
 

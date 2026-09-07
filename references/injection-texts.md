@@ -4,91 +4,14 @@
 
 ---
 
-## 1. speckit-plan（阶段 3.3）
+## 1. speckit-plan / speckit-implement 经验查阅与复盘（已迁移为原生 Hook）
 
-### 1.1 正则匹配成功时插入
-
-````
-<!-- SPEC-KIT-INIT:PLAN-LESSONS:START -->
-   - **MUST** also read `.specify/memory/lessons.md`（项目级实战经验，如有相关条目须在方案中显式引用）：
-     1. 先读取 `.specify/memory/lessons-index.md`，扫描是否有与当前功能相关的关键词
-     2. 有命中 → 读取 `lessons.md` 中对应的具体条目，在方案中显式引用
-     3. 无命中 → 告知用户"lessons.md 中暂无本功能相关经验"，继续后续步骤
-<!-- SPEC-KIT-INIT:PLAN-LESSONS:END -->
-````
-
-### 1.2 兜底追加
-
-````
-<!-- SPEC-KIT-INIT:PLAN-LESSONS:START -->
-<!-- ⚠ 自动追加，请人工确认位置是否正确 -->
-## ⚠ 经验库注入（由 spec-kit-init 追加）
-
-在执行 plan 前，**MUST** 按以下步骤读取经验库：
-1. 先读取 `.specify/memory/lessons-index.md`（极轻量索引），扫描是否有与当前功能相关的关键词
-2. 有命中 → 读取 `lessons.md` 中对应的具体条目，在方案中显式引用
-3. 无命中 → 告知用户"暂无相关经验"，继续后续步骤
-<!-- SPEC-KIT-INIT:PLAN-LESSONS:END -->
-````
-
----
-
-## 2. speckit-implement — lessons.md 必读（阶段 3.4 改动 A）
-
-### 2.1 正则匹配成功时插入
-
-````
-<!-- SPEC-KIT-INIT:IMPLEMENT-LESSONS:START -->
-   - **必须** 读取 `.specify/memory/lessons-index.md`（极轻量索引），扫描是否有与当前实现相关的关键词：
-     1. 有命中 → 读取 `lessons.md` 中对应的具体条目，在实现中遵循
-     2. 无命中 → 继续后续步骤，无需读取完整 `lessons.md`
-<!-- SPEC-KIT-INIT:IMPLEMENT-LESSONS:END -->
-````
-
----
-
-## 3. speckit-implement — 复盘询问（阶段 3.4 改动 B）
-
-### 3.1 正则匹配成功时插入
-
-````
-<!-- SPEC-KIT-INIT:IMPLEMENT-RETRO:START -->
-10. **经验沉淀提示（Retrospective Prompt）**：
-
-    实施全部完成、状态汇报输出之后，**主动询问用户是否进行复盘**，让本次实现中的踩坑、决策、验证结果有机会沉淀为长期资产。
-
-    询问格式（中文，简洁）：
-    ```
-    本次实现已完成，是否现在做一次经验复盘？(/retro)
-    - 是 → 调用 /retro 进入复盘流程（按 constitution.md / lessons.md 二路分流）
-    - 稍后 → 跳过，你可以随时手动输 /retro
-    - 否 → 跳过本次复盘
-    ```
-
-    判断准则：
-    - **建议复盘**：本次实现踩过坑、做过非显然的决策、推翻了规格中的预设、发现宪章不够用
-    - **可以跳过**：纯模板化代码、无新认知、用户已表达"不想复盘"
-
-    用户回应"是"/"复盘"/"yes" → 调用 `/retro` skill 继续；用户选择跳过则正常结束。
-<!-- SPEC-KIT-INIT:IMPLEMENT-RETRO:END -->
-````
-
-### 3.2 兜底追加
-
-````
-<!-- SPEC-KIT-INIT:IMPLEMENT-LESSONS:START -->
-<!-- SPEC-KIT-INIT:IMPLEMENT-RETRO:START -->
-<!-- ⚠ 自动追加，请人工确认位置是否正确 -->
-## ⚠ 经验库注入（由 spec-kit-init 追加）
-
-1. 实现开始前，**必须** 按以下步骤读取经验库：
-   - 先读取 `.specify/memory/lessons-index.md`，扫描是否有与当前实现相关的关键词
-   - 有命中 → 读取 `lessons.md` 中对应的具体条目
-   - 无命中 → 继续后续步骤
-2. 实现完成后，**主动询问用户**是否执行 `/retro` 复盘。
-<!-- SPEC-KIT-INIT:IMPLEMENT-LESSONS:END -->
-<!-- SPEC-KIT-INIT:IMPLEMENT-RETRO:END -->
-````
+> **机制变更（v0.13.0）**：plan/implement 的经验查阅与复盘**不再通过文本注入**实现，改为 spec-kit 原生 Hook（memory 扩展，见第 9.5 节）。
+>
+> - `before_plan` / `before_implement` → 强制触发 `speckit.memory.lookup` 命令（经验查阅）
+> - `after_implement` → 可选触发 `retro`（复盘询问）
+>
+> 因此本文件删除了原 §1（PLAN-LESSONS）、§2（IMPLEMENT-LESSONS）、§3（IMPLEMENT-RETRO）的注入文本与对应锚点（§8.1 / §8.2）。这些标记仅在**存量旧版项目**中存在，升级（0.4）时会移除旧文本并确认 hook 就位。
 
 ---
 
@@ -180,31 +103,7 @@ Bug Extension 适用于可快速定位和修复的缺陷。当满足以下任一
 
 以下为各 spec-kit skill 文件中用于结构匹配的**锚点标题列表**。在注入前，读取目标文件，统计以下锚点在该文件中的命中率，判断结构兼容性。
 
-### 8.1 speckit-plan 锚点（阶段 3.3）
-
-用于定位「Load context」步骤的锚点：
-
-```
-Load context, Load IMPL_PLAN, constitution.md, FEATURE_SPEC, Fill Constitution Check
-```
-
-> 匹配率 = 命中的锚点数 / 总锚点数（5 个）。匹配率 ≥ 60%（3/5）时正常注入；< 60% 时走兜底。
-
-### 8.2 speckit-implement 锚点（阶段 3.4）
-
-用于定位「实现上下文读取」步骤的锚点：
-
-```
-Load and analyze, implementation context, Read tasks.md, Read plan.md, Read data-model.md
-```
-
-用于定位「Completion validation」步骤的锚点：
-
-```
-Completion validation, Verify all required tasks, Check that implemented features, Validate that tests pass, Confirm the implementation follows
-```
-
-> 匹配率为两组锚点分别计算。任一组匹配率 < 50% 时，该改动走兜底。
+> **plan/implement 锚点已废弃（v0.13.0）**：经验查阅/复盘不再注入这两个命令，原 §8.1（plan）与 §8.2（implement）锚点已删除。仅保留 Bug 链路锚点。
 
 ### 8.3 speckit-bug-assess 锚点（阶段 5.2.1）
 
@@ -244,12 +143,11 @@ Judge the outcome, Write the verification report, verification report, Mark the 
 
 | 标记 | 注入对象 | 阶段 |
 |------|----------|------|
-| `<!-- SPEC-KIT-INIT:PLAN-LESSONS:START/END -->` | `/speckit-plan` 经验库读取 | 3.3 |
-| `<!-- SPEC-KIT-INIT:IMPLEMENT-LESSONS:START/END -->` | `/speckit-implement` 经验库读取 | 3.4 改动 A |
-| `<!-- SPEC-KIT-INIT:IMPLEMENT-RETRO:START/END -->` | `/speckit-implement` 复盘询问 | 3.4 改动 B |
 | `<!-- SPEC-KIT-INIT:BUG-ASSESS-LESSONS:START/END -->` | `/speckit.bug.assess` 经验库读取 | 5.2.1 |
 | `<!-- SPEC-KIT-INIT:BUG-TEST-QUALITY-RETRO:START/END -->` | `/speckit.bug.test` 质量门禁与复盘联动 | 5.2.2 |
 | `<!-- SPEC-KIT-INIT:KB-REFERENCE:START/END -->` | `{AGENT_FILE}` 外部知识库参考 | 阶段 2 |
+
+> **已废弃（v0.13.0）**：`PLAN-LESSONS` / `IMPLEMENT-LESSONS` / `IMPLEMENT-RETRO` 三个标记随经验注入迁移为原生 Hook 而停用。存量旧版项目可能残留，升级（0.4）时移除。
 
 规则：
 
@@ -302,18 +200,6 @@ spec_kit_init:
       status: applied
       mode: anchored
       template_version: 1
-    speckit_plan_lessons:
-      status: applied
-      mode: anchored
-      template_version: 1
-    speckit_implement_lessons:
-      status: applied
-      mode: anchored
-      template_version: 1
-    speckit_implement_retro:
-      status: applied
-      mode: anchored
-      template_version: 1
     speckit_bug_assess_lessons:
       status: applied
       mode: anchored
@@ -322,7 +208,18 @@ spec_kit_init:
       status: applied
       mode: anchored
       template_version: 1
+  extensions:                          # 安装的扩展记录（原生 Hook）
+    memory:
+      status: applied                  # applied / missing / overwritten / user_modified / skipped / failed
+      version: "1.0.0"                 # memory 扩展版本
+      installed_at: "2026-08-12"
+      hooks:                           # 期望的 3 个 Hook 与配置
+        before_plan: { command: "speckit.memory.lookup", optional: false }
+        before_implement: { command: "speckit.memory.lookup", optional: false }
+        after_implement: { command: "retro", optional: true }
 ```
+
+> 注：`spec_kit_init.injections.speckit_plan_lessons` / `speckit_implement_lessons` / `speckit_implement_retro` 三个字段已随经验注入迁移而停用，不再写入。存量 config 中保留的旧字段视为遗留，升级（0.4）时删除。
 
 **状态枚举**：
 
@@ -348,3 +245,45 @@ spec_kit_init:
 | 有 | 无 | ⚠️ 被覆盖/删除 | 走补齐流程恢复注入 |
 | 无 | 有 | 存量注入（旧版） | 补写配置记录，不重复注入 |
 | 无 | 无 | 未注入 | 执行注入 |
+
+### 9.5 memory 扩展 hooks 注册表（v0.13.0）
+
+经验查阅与复盘通过 **spec-kit 原生 Hook** 触发，不再文本注入 speckit-plan / speckit-implement。Hook 声明在 `.specify/extensions.yml` 的 `hooks:` 键下（memory 扩展安装时自动合并），是**项目配置文件里的数据**——spec-kit 升级不会冲掉（与文本注入的对抗机制相反，这正是本次改造的收益）。
+
+#### 9.5.1 三个 Hook 的 Schema
+
+| 生命周期事件 | command | optional | prompt | 语义 |
+|--------------|---------|----------|--------|------|
+| `before_plan` | `speckit.memory.lookup` | `false`（强制） | — | 规划前强制查阅经验库 |
+| `before_implement` | `speckit.memory.lookup` | `false`（强制） | — | 实现前强制查阅经验库 |
+| `after_implement` | `retro` | `true`（可选） | 本次实现已完成，是否做一次经验复盘？(/retro) | 实现后询问是否复盘 |
+
+> `command` 取值规则：`speckit.*` 命令渲染为 `/speckit-*`；非 `speckit.` 前缀裸命令（如 `retro`）在 Claude 下渲染为 `/{command}`。Codex `$` 模式渲染不完整——已知限制，接受。
+
+#### 9.5.2 用户可关掉单个 Hook
+
+`optional: true` 的钩子由 AI 在对应事件询问用户，用户拒绝即不执行。若用户想**彻底禁用**某钩子（连询问都不要），改 `.specify/extensions.yml` 中对应钩子的 `enabled: false`：
+
+```yaml
+hooks:
+  after_implement:
+    command: retro
+    optional: true
+    enabled: false        # 用户手动关闭：不再触发复盘询问
+```
+
+> spec-kit 的 `get_hooks_for_event` 会过滤 `enabled: false` 的钩子。**阶段 0 不自动改回**——用户显式关闭视为「user_modified」状态，仅在汇报中提示。
+
+#### 9.5.3 配置记录与实际 Hook 交叉验证
+
+同 9.4 的哲学：`.specify/config.yml` 的 `extensions.memory` 记录**不是** Hook 存在的事实来源——`specify extension remove`、手动编辑 `extensions.yml` 都可能改变实际 Hook。阶段 0 判定 Hook 状态时，读取 `extensions.memory.hooks` 记录并对照 `.specify/extensions.yml` 实际内容：
+
+| 配置记录 | 实际 Hook | 判定 | 处理 |
+|----------|-----------|------|------|
+| 记录齐全 | 3 个 Hook 均在（且 `optional` 与记录一致） | ✅ 完成 | 无需处理 |
+| 记录齐全 | 缺 `before_plan` / `before_implement` / `after_implement` 之一 | ⚠️ 被移除 | 回阶段 3.1 重装 memory 扩展（幂等） |
+| 记录齐全 | Hook 在但 `enabled: false` | 用户显式关闭 | 不自动恢复，汇报提示 |
+| 无记录 | 有 Hook | 存量 Hook（手动或其他来源） | 补写 `extensions.memory` 记录，不重复安装 |
+| 无记录 | 无 Hook | 未安装 | 阶段 3.1 安装 memory 扩展 |
+
+> **注意**：重装 memory 扩展会覆盖 `.specify/extensions.yml` 中**该扩展**的 hooks（`register_hooks` 只清理同 id 的旧记录），用户对其他扩展或同文件手写的 hooks 保留。若用户曾对 memory 钩子手动修改（`enabled: false` 等），重装会覆盖——此时应先询问是否保留自定义。

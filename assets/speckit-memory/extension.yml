@@ -1,0 +1,39 @@
+schema_version: "1.0"
+
+extension:
+  id: memory
+  name: "Memory & Experience"
+  version: "1.0.0"
+  description: "经验库前置查阅与经验沉淀触发（通过 spec-kit 原生 Hook 接入 plan/implement 生命周期）"
+  author: spec-kit-init
+  license: MIT
+
+requires:
+  speckit_version: ">=0.8.5"
+
+provides:
+  commands:
+    - name: speckit.memory.lookup
+      file: commands/speckit.memory.lookup.md
+      description: "经验库查阅：在 plan/implement 前读取相关经验（两步：先扫索引，命中才读正文）"
+
+hooks:
+  before_plan:
+    command: speckit.memory.lookup
+    optional: false            # 强制：忠实原「MUST 读经验库」语义，每次规划前自动查阅
+    description: "规划前查阅经验库（两步：先扫 lessons-index.md，命中才读 lessons.md 正文）"
+  before_implement:
+    command: speckit.memory.lookup
+    optional: false
+    description: "实现前查阅经验库"
+  after_implement:
+    command: retro             # 复用已部署的 /retro skill（非 speckit.* 裸命令，Claude 渲染为 /retro）
+    optional: true             # 可选：实现完成后询问是否复盘（无价值场景由 /retro 自行跳过）
+    prompt: "本次实现已完成，是否做一次经验复盘？(/retro)"
+    description: "实现后触发经验沉淀"
+
+tags:
+  - "memory"
+  - "experience"
+  - "review"
+  - "core"
